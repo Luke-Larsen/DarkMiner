@@ -8,8 +8,12 @@ $User = $_GET["name"];
 $CPU = $_GET["CPU"];
 $Version = $_GET["version"];
 $Mining = $_GET["Mining"];
+
 if(isset($_GET['MiningTotalTime'])){
     $MiningTotalTime = $_GET['MiningTotalTime'];
+}
+if(isset($_GET['Type'])){
+    $Type = $_GET['Type'];
 }
 
 $time = time();
@@ -32,50 +36,58 @@ if(($result ->num_rows == 0)){
     $stmt->close();
     echo $serverVersion;
 }else{
-    //Already exists in the system
-    if(isset($Mining) && $Mining != 2){
-        //Old System being phased out
-        //If its a mining call
-
-        if($row['Active'] == 1){
-            //Was Mining now not, adding time to the total time mining
-            if($Mining == 0){
-                    $MiningTime = time() - $row['Mining'];
-                    $MiningTime /= 60;
-                    $MiningTime = round($MiningTime,0,PHP_ROUND_HALF_UP);
-                    $MiningTime += $TTM;
-                    $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=?, TotalMinedTime=? WHERE name=?");
-                    $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTime,$User);
-                    $stmt->execute();
-                    $stmt->close();
-            }else{
-                //This shouldn't happen
-                //It would mean that it was active and is now updating to say it is still active
-                echo "error";
-            }
-
+    if(isset($Type)){
+        if($Type == 'checkVersion'){
+            echo $serverVersion;
         }else{
-            //Starting mining
-            $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=? WHERE name=?");
-            $stmt->bind_param("iiss", $Mining,$time,$ip,$User);
+            $MiningTime = time() - $row['Mining'];
+            $MiningTime /= 60;
+            $MiningTime = round($MiningTime,0,PHP_ROUND_HALF_UP);
+            $MiningTime += $TTM;
+            $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=?, TotalMinedTime=? WHERE name=?");
+            $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTime,$User);
+            $stmt->execute();
+            $stmt->close();
+            echo "1";
+        }
+    }else{
+    //Use old system mainly implemented in the C++ version
+        //Already exists in the system
+        if(isset($Mining) && $Mining != 2){
+            //If its a mining call
+            if($row['Active'] == 1){
+                //Was Mining now not, adding time to the total time mining
+                if($Mining == 0){
+                        $MiningTime = time() - $row['Mining'];
+                        $MiningTime /= 60;
+                        $MiningTime = round($MiningTime,0,PHP_ROUND_HALF_UP);
+                        $MiningTime += $TTM;
+                        $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=?, TotalMinedTime=? WHERE name=?");
+                        $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTime,$User);
+                        $stmt->execute();
+                        $stmt->close();
+                }else{
+                    //This shouldn't happen
+                    //It would mean that it was active and is now updating to say it is still active
+                    echo "error";
+                }
+
+            }else{
+                //Starting mining
+                $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=? WHERE name=?");
+                $stmt->bind_param("iiss", $Mining,$time,$ip,$User);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }else{
+            //If its a boot up call
+            $stmt = $con->prepare("UPDATE Work SET CPU=?, ip=?,Version=? WHERE name=?");
+            $stmt->bind_param("isis", $CPU,$ip,$Version, $User);
             $stmt->execute();
             $stmt->close();
         }
-
-
-    }elseif($Mining == 2){
-        $stmt = $con->prepare("UPDATE Work SET `TotalMinedTime`=? WHERE `name`=?");
-        $stmt->bind_param("is", $MiningTotalTime,$User);
-        $stmt->execute();
-        $stmt->close();
-    }else{
-        //If its a boot up call
-        $stmt = $con->prepare("UPDATE Work SET CPU=?, ip=?,Version=? WHERE name=?");
-        $stmt->bind_param("isis", $CPU,$ip,$Version, $User);
-        $stmt->execute();
-        $stmt->close();
+        echo $serverVersion;
     }
-    echo $serverVersion;
 }
 
 ?>

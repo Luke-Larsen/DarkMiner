@@ -17,8 +17,6 @@ import easygui
 #Website you are hosting the controlling server on
 BaseSite = 'http://localhost/DarkMiner/'
 
-
-
 #functions
 def UpdateTotalMiningTime(value):
     config.read('config.ini')
@@ -30,21 +28,35 @@ def UpdateTotalMiningTime(value):
     with open('config.ini', 'w+') as configfile:
         config.write(configfile)
 
-
-def CommandAndControl():
+def CommandAndControl(type):
     import requests
-    URL = BaseSite + 'coms.php'
-    config.read('config.ini')
-    TotalTimeMining = config['value']['TotalTimeMining']
-    PARAMS = {'name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':2,'MiningTotalTime':TotalTimeMining,'version': Version}
-    r = requests.get(url=URL, params=PARAMS)
-    data = r.json()
-    #Here we should get back the server version
-    #Create a downloader for an update and be squared away
-
-    print(data)
-
-
+    print("Talked to server")
+    if type == 'startSignal':
+        URL = BaseSite + 'coms.php'
+        config.read('config.ini')
+        TotalTimeMining = config['value']['TotalTimeMining']
+        PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
+        r = requests.get(url=URL, params=PARAMS)
+        data = r.json()
+        print(data)
+    elif type == 'endSignal':
+        URL = BaseSite + 'coms.php'
+        config.read('config.ini')
+        TotalTimeMining = config['value']['TotalTimeMining']
+        PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
+        r = requests.get(url=URL, params=PARAMS)
+        data = r.json()
+        print(data)
+    elif type == 'checkVersion':
+        URL = BaseSite + 'coms.php'
+        config.read('config.ini')
+        TotalTimeMining = config['value']['TotalTimeMining']
+        PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
+        r = requests.get(url=URL, params=PARAMS)
+        data = r.json()
+        if int(data) > int(Version):
+            print("Old Version")
+            
 def LinuxIdleTime():
     from idle_time import IdleMonitor
     monitor = IdleMonitor.get_monitor()
@@ -57,7 +69,6 @@ def LinuxIdleTime():
         print(IdleTimeSet)
         time.sleep(waitTime-IdleTimeSet)
 
-
 def WindowsIdleTime():
     import win32api
     while True:
@@ -68,17 +79,14 @@ def WindowsIdleTime():
             print('No Activity ~ Prepare to launch!')
             break
 
-
 def Is64Windows():
     return 'PROGRAMFILES(X86)' in os.environ
-
 
 def GetProgramFiles32():
     if Is64Windows():
         return False
     else:
         return True
-
 
 def DownloadData(url, direc):
     import requests
@@ -88,8 +96,9 @@ def DownloadData(url, direc):
         f.write(r.content)
         print('Success Downloading files')
 
-
 def Miner():
+    if Communication == 2:
+        CommandAndControl("startSignal")
     if osSystem == 'win32':
         if not os32Bit:
             if os.path.exists(WinPathDownloads + 'xmrig.exe'):
@@ -129,8 +138,10 @@ def Miner():
                 if LastActivity != win32api.GetLastInputInfo():
                     print('Activity! Eject!')
                     proc.terminate()  # Terminates Child Process
+                    if Communication == 2:
+                        CommandAndControl("endSignal")
                     break
-            main()  # Back to our main fuction and loop
+            main()  # Back to our main function and loop
     elif osSystem == 'Linux':
         if is_64bits:
             if not os.path.exists(LinuxPathDownloads):
@@ -162,11 +173,13 @@ def Miner():
                     #log Total Time active
                     UpdateTotalMiningTime(TotalSleepTime)
                     TotalSleepTime = 0
+                    if Communication == 2:
+                        CommandAndControl("endSignal")
                     break
             main()
 
 def Install():
-    if easygui.ynbox('Procced with the install of DarkMiner. A tool used for mining cryptocurrency. If you do not know what this is press NO', 'Title', ('Yes', 'No')):
+    if easygui.ynbox('Proceed with the install of DarkMiner. A tool used for mining cryptocurrency. If you do not know what this is press NO', 'Title', ('Yes', 'No')):
         if easygui.ynbox('Would you like this to reboot on each startup of the computer', 'Title', ('Yes', 'No')):
             rebootStart = 1
         else:
@@ -174,6 +187,7 @@ def Install():
         #writting to config
         config['settings'] = {
             "Agree" : 1,
+            "Communication" : 0, #0 no communication; 1 basic comunication; 2 verbose communication
             "rebootStart" : rebootStart,
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
@@ -221,11 +235,8 @@ def Install():
     os.system("nohup python3 "+UserPath+"main.py"+" &")
 
 
-
 def main():
     #print('Starting DarkMiner on ' + osSystem)
-    #Contact server
-    CommandAndControl()
     #check machine type to send to proper idle
     if osSystem == 'win32':
         WindowsIdleTime()
@@ -240,6 +251,7 @@ if os.path.isfile('config.ini'):
     config.read('config.ini')
     #Settings
     Agree = int(config['settings']['Agree'])
+    Communication = int(config['settings']['Communication'])
     rebootStart = int(config['settings']['rebootStart'])
     waitTime = int(config['settings']['waitTime'])
     WinPathDownloads = config['settings']['WinPathDownloads']
@@ -254,8 +266,9 @@ if os.path.isfile('config.ini'):
 else:
     Agree = 0
 
-
-
+#Check version of the program to make sure we are running the latest and greatest
+if Communication >= 1:
+    CommandAndControl("checkVersion")
 #Start of program Determans what operating system to go with
 if sys.platform.startswith('win32'):
     osSystem = 'win32'
