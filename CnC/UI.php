@@ -1,10 +1,12 @@
 <?php
 session_start();
+
+//UPDATE: Create a lockdown mode that will 404 anyone who doesn't have a cookie or php session
+
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 require 'config.php';
-
 
 //Get domain server is hosted on
 $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";

