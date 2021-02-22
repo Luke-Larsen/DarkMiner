@@ -33,6 +33,12 @@ if(isset($_POST['passwordChangeFormSubmit'])){
         }
     }
 }
+?>
+<html>
+    <head>
+        <script src='https://www.google.com/recaptcha/api.js'></script>
+    </head>
+<?php
 if(isset($_GET['logout'])){
     unset($_SESSION["USER"]);
     session_regenerate_id();
@@ -50,28 +56,35 @@ if(isset($_GET['logout'])){
 
 if(isset($_POST['passwordFormSubmit'])){
     $userSuppliedPassword = $_POST['password'];
-
-    if($hashPassword == "MySecurePassword" && $userSuppliedPassword == $hashPassword){
-        exit("
-        Please change your password:
-        <form action='' name='passwordChangeForm' method='post'>
-            Password : <input name='password' type='text'>
-            Confirm Password : <input name='password1' type='text'>
-            <input name='passwordChangeFormSubmit' type='submit' value='Submit'>
-        </form>
-        ");
-    }else{
-        if (password_verify($userSuppliedPassword, $hashPassword)){
-            session_regenerate_id();
-            //UPDATE: to set the session with a secure key and cookie to keep user logged in
-            $_SESSION["USER"] = 'User';
-            echo "Success     
-            <a href='$actual_link'>Click here if not redirected</a>
-            <script>location.href = '$actual_link';</script>";
+    $captcha = $_POST['g-recaptcha-response'];
+    $rsp  = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=$googleCaptchaSecret&response=$captcha");
+    $arr = json_decode($rsp,TRUE);
+    if($arr['success']){
+        if($hashPassword == "MySecurePassword" && $userSuppliedPassword == $hashPassword){
+            exit("
+            Please change your password:
+            <form action='' name='passwordChangeForm' method='post'>
+                Password : <input name='password' type='text'>
+                Confirm Password : <input name='password1' type='text'>
+                <input name='passwordChangeFormSubmit' type='submit' value='Submit'>
+            </form>
+            ");
         }else{
-            echo "wrong password";
+            if (password_verify($userSuppliedPassword, $hashPassword)){
+                session_regenerate_id();
+                //UPDATE: to set the session with a secure key and cookie to keep user logged in
+                $_SESSION["USER"] = 'User';
+                echo "Success     
+                <a href='$actual_link'>Click here if not redirected</a>
+                <script>location.href = '$actual_link';</script>";
+            }else{
+                echo "wrong password";
+            }
         }
+    }else{
+        echo "Bad captcha";
     }
+
 }else{
     //Stop user if they aren't proven to be authorized
     if(!isset($_SESSION['USER'])){
@@ -79,6 +92,7 @@ if(isset($_POST['passwordFormSubmit'])){
             <form action='' name='passwordForm' method='post'>
                 Password : <input name='password' type='text'>
                 <input name='passwordFormSubmit' type='submit' value='Submit'>
+                <div class='g-recaptcha' data-sitekey='$googleCaptchaPublic'></div>
             </form>";
     }else{
         //page stuff
@@ -96,3 +110,4 @@ if(isset($_POST['passwordFormSubmit'])){
     }
 }
 ?>
+</html>

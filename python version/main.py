@@ -227,9 +227,6 @@ def Install():
         FileName = sys.argv[0]
         if not os.path.isdir(UserPath):
             os.mkdir(UserPath,0o755)
-        #Download our script to that path
-        #Download the latest script from github
-        DownloadData("https://raw.githubusercontent.com/Luke-Larsen/DarkMiner/master/python%20version/main.py", UserPath + FileName)
         #set cron tab linking to that site
         from crontab import CronTab
         cron = CronTab(user=True)
@@ -244,10 +241,11 @@ def Install():
             job = cron.new(command='python3 '+UserPath+FileName,comment='DarkMiner')
             job.every_reboot()
             cron.write()
-    #Copy config.ini file to working directory
+    #Copy files to working directory
     from shutil import copyfile
+    copyfile("main.py", UserPath+"main.py")
     copyfile("config.ini", UserPath+"config.ini")
-    os.remove("config.ini")
+    #os.remove("config.ini")
     #Start file from working directory
     easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
     os.system("nohup python3 "+UserPath+"main.py"+" &")
