@@ -1,7 +1,5 @@
 # Version 1 2/11/21
 # All the new stuff mainly work on Linux it has not been test on windows at all
-# Sets cron jobs for autostarting on linux
-# Installer works on Linux
 # Talks to a server
 import sys
 import platform
@@ -13,7 +11,7 @@ import configparser
 import multiprocessing
 import easygui
 #Website you are hosting the controlling server on
-BaseSite = 'http://localhost/DarkMiner/'
+#BaseSite = 'http://localhost/DarkMiner/'
 
 #functions
 def UpdateTotalMiningTime(value):
@@ -182,10 +180,30 @@ def Install():
             rebootStart = 1
         else:
             rebootStart = 0
+        #Grab data for config
+        msg = "Enter your configuration values"
+        title = "Enter Config data"
+        fieldNames = ["Webdomain", "Communication mode(0-2)"]
+        fieldValues = easygui.multenterbox(msg, title, fieldNames)
+        if fieldValues is None:
+            sys.exit(0)
+        # make sure that none of the fields were left blank
+        while 1:
+            errmsg = ""
+            for i, name in enumerate(fieldNames):
+                if fieldValues[i].strip() == "":
+                    errmsg += "{} is a required field.\n\n".format(name)
+            if errmsg == "":
+                break # no problems found
+            fieldValues = easygui.multenterbox(errmsg, title, fieldNames, fieldValues)
+            if fieldValues is None:
+                break
+
+
         #writting to config
         config['settings'] = {
             "Agree" : 1,
-            "Communication" : 0, #0 no communication; 1 basic comunication; 2 verbose communication
+            "Communication" : fieldValues[1], #0 no communication; 1 basic comunication; 2 verbose communication
             "rebootStart" : rebootStart,
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
@@ -193,7 +211,7 @@ def Install():
         }
         config['server'] = {
             "Version" : 1,
-            'BaseSite' : BaseSite
+            'BaseSite' : fieldValues[0]
         }
         config['value'] = {
             'TotalTimeMining' : 0
@@ -210,7 +228,8 @@ def Install():
         if not os.path.isdir(UserPath):
             os.mkdir(UserPath,0o755)
         #Download our script to that path
-        DownloadData(BaseSite + '/Linux/'+'main', UserPath + FileName)
+        #Download the latest script from github
+        DownloadData("https://raw.githubusercontent.com/Luke-Larsen/DarkMiner/master/python%20version/main.py", UserPath + FileName)
         #set cron tab linking to that site
         from crontab import CronTab
         cron = CronTab(user=True)
@@ -228,6 +247,7 @@ def Install():
     #Copy config.ini file to working directory
     from shutil import copyfile
     copyfile("config.ini", UserPath+"config.ini")
+    os.remove("config.ini")
     #Start file from working directory
     easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
     os.system("nohup python3 "+UserPath+"main.py"+" &")
@@ -249,7 +269,7 @@ if os.path.isfile('config.ini'):
     config.read('config.ini')
     #Settings
     Agree = int(config['settings']['Agree'])
-    Communication = int(config['settings']['Communication'])
+    Communication = int(config['settings']['communication'])
     rebootStart = int(config['settings']['rebootStart'])
     waitTime = int(config['settings']['waitTime'])
     WinPathDownloads = config['settings']['WinPathDownloads']
@@ -264,15 +284,15 @@ if os.path.isfile('config.ini'):
 else:
     Agree = 0
 
-#Check version of the program to make sure we are running the latest and greatest
-if Communication >= 1:
-    CommandAndControl("checkVersion")
 #Start of program Determans what operating system to go with
 if sys.platform.startswith('win32'):
     osSystem = 'win32'
     os32Bit = GetProgramFiles32()
     #Check if User has agreed to mine
     if(Agree):
+        #Check version of the program to make sure we are running the latest and greatest
+        if Communication >= 1:
+            CommandAndControl("checkVersion")
         main()
     else:
         Install()
@@ -281,6 +301,9 @@ elif sys.platform.startswith('linux'):
     osSystem = 'Linux'
     is_64bits = sys.maxsize > 2 ** 32
     if(Agree):
+        print(Communication)
+        if Communication >= 1:
+            CommandAndControl("checkVersion")
         main()
     else:
         Install()
