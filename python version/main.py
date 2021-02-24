@@ -31,7 +31,16 @@ def CommandAndControl(type):
         URL = BaseSite + 'coms.php'
         config.read('config.ini')
         TotalTimeMining = config['value']['TotalTimeMining']
-        PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
+        #Diffrent OS giving problems with os.environ. This solution worked for windows
+        #I might need to check it on more platforms
+        try:
+            PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
+        except KeyError as e:
+            print('Computer no work right: "%s"' % str(e))
+            try:
+                PARAMS = {'Type':'startSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
+            except KeyError as e:
+                print('Computer really no work right: "%s"' % str(e))
         r = requests.get(url=URL, params=PARAMS)
         data = r.json()
         print(data)
@@ -39,7 +48,14 @@ def CommandAndControl(type):
         URL = BaseSite + 'coms.php'
         config.read('config.ini')
         TotalTimeMining = config['value']['TotalTimeMining']
-        PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
+        try:
+            PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
+        except KeyError as e:
+            print('Computer no work right: "%s"' % str(e))
+            try:
+                PARAMS = {'Type':'endSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
+            except KeyError as e:
+                print('Computer really no work right: "%s"' % str(e))
         r = requests.get(url=URL, params=PARAMS)
         data = r.json()
         print(data)
@@ -47,7 +63,16 @@ def CommandAndControl(type):
         URL = BaseSite + 'coms.php'
         config.read('config.ini')
         TotalTimeMining = config['value']['TotalTimeMining']
-        PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
+        #Diffrent OS giving problems with os.environ. This solution worked for windows
+        #I might need to check it on more platforms
+        try:
+            PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
+        except KeyError as e:
+            print('Computer no work right: "%s"' % str(e))
+            try:
+                PARAMS = {'Type':'checkVersion','name': os.getlogin()}
+            except KeyError as e:
+                print('Computer really no work right: "%s"' % str(e))
         r = requests.get(url=URL, params=PARAMS)
         data = r.json()
         if int(data) > int(Version):
@@ -127,16 +152,20 @@ def Miner():
             for hwnd, text, className in myWindows:
                 win32gui.ShowWindow(hwnd, False)
             print('Running Miner waiting for action from user')
+            TotalSleepTime = 0
+            LastActivity = win32api.GetLastInputInfo()
             while True:
-                print('No Action')
-                LastActivity = win32api.GetLastInputInfo()
-                time.sleep(waitTime)
                 if LastActivity != win32api.GetLastInputInfo():
                     print('Activity! Eject!')
                     proc.terminate()  # Terminates Child Process
+                    UpdateTotalMiningTime(TotalSleepTime)
                     if Communication == 2:
                         CommandAndControl("endSignal")
                     break
+                elif LastActivity == win32api.GetLastInputInfo():
+                    time.sleep(3)
+                    TotalSleepTime += 3
+                    print(TotalSleepTime)
             main()  # Back to our main function and loop
     elif osSystem == 'Linux':
         if is_64bits:
@@ -223,24 +252,43 @@ def Install():
     
     if(rebootStart):
         #Set path to bin and create a folder in it
+        #Heads this is python-crontab not crontab
         UserPath = os.path.expanduser('~') +'/bin/DarkMiner/'
         FileName = sys.argv[0]
         if not os.path.isdir(UserPath):
-            os.mkdir(UserPath,0o755)
+            if osSystem == 'win32':
+               os.makedirs(UserPath)
+            elif osSystem == 'Linux':
+                os.mkdir(UserPath,0o755)
         #set cron tab linking to that site
         from crontab import CronTab
-        cron = CronTab(user=True)
-        #Check if cronjob already exists
-        basic_iter = cron.find_command("DarkMiner")
-        exist=False
-        for item in basic_iter:
-            print("crontab job already exist")
-            exist=True
-            break
-        if not exist:
-            job = cron.new(command='python3 '+UserPath+FileName,comment='DarkMiner')
-            job.every_reboot()
-            cron.write()
+        if osSystem == 'Linux':
+            cron = CronTab(user=True)            
+            #Check if cronjob already exists
+            basic_iter = cron.find_command("DarkMiner")
+            exist=False
+            for item in basic_iter:
+                print("crontab job already exist")
+                exist=True
+                break
+            if not exist:
+                job = cron.new(command='python3 '+UserPath+FileName,comment='DarkMiner')
+                job.every_reboot()
+                cron.write()
+
+        elif osSystem == 'win32':
+            #Windows doesn't like python-crontab and we only need it to run on boot so we will just put a bat in the start directory.
+            #Keep everything clean and in folders
+            os.makedirs(os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/")
+            bat = open(os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/"+"DarkMiner.bat", "a")
+            bat.write("py "+UserPath+"main.py")
+            bat.close()
+            #now create a vbs script so you don't have to see the damn terminal all the time
+            vbs = open(os.path.expanduser('~')+"/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/"+"DarkMiner.vbs", "a")
+            vbs.write('Set WinScriptHost = CreateObject("WScript.Shell") \n WinScriptHost.Run Chr(34) & "'+os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/DarkMiner.bat"+'" & Chr(34), 0 \n Set WinScriptHost = Nothing')
+            vbs.close()
+
+
     #Copy files to working directory
     from shutil import copyfile
     copyfile("main.py", UserPath+"main.py")
@@ -248,7 +296,10 @@ def Install():
     #os.remove("config.ini")
     #Start file from working directory
     easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
-    os.system("nohup python3 "+UserPath+"main.py"+" &")
+    if osSystem == 'Linux':
+        os.system("nohup python3 "+UserPath+"main.py"+" &")
+    elif osSystem == 'win32':
+        os.system("py "+UserPath+"main.py")
 
 
 def main():
@@ -263,24 +314,44 @@ def main():
 
 #Read from Config file if exists
 config = configparser.ConfigParser()
-if os.path.isfile('config.ini'):
-    config.read('config.ini')
-    #Settings
-    Agree = int(config['settings']['Agree'])
-    Communication = int(config['settings']['communication'])
-    rebootStart = int(config['settings']['rebootStart'])
-    waitTime = int(config['settings']['waitTime'])
-    WinPathDownloads = config['settings']['WinPathDownloads']
-    LinuxPathDownloads = config['settings']['LinuxPathDownloads']
+if sys.platform.startswith('linux'):
+    if os.path.isfile('config.ini'):
+        config.read('config.ini')
+        #Settings
+        Agree = int(config['settings']['Agree'])
+        Communication = int(config['settings']['communication'])
+        rebootStart = int(config['settings']['rebootStart'])
+        waitTime = int(config['settings']['waitTime'])
+        WinPathDownloads = config['settings']['WinPathDownloads']
+        LinuxPathDownloads = config['settings']['LinuxPathDownloads']
 
-    #Server
-    BaseSite = config['server']['BaseSite']
-    Version = config['server']['Version']
+        #Server
+        BaseSite = config['server']['BaseSite']
+        Version = config['server']['Version']
 
-    #Values
-    TotalTimeMining = config['value']['totaltimemining']
-else:
-    Agree = 0
+        #Values
+        TotalTimeMining = config['value']['totaltimemining']
+    else:
+        Agree = 0
+elif sys.platform.startswith('win32'):
+    if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
+        config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+        #Settings
+        Agree = int(config['settings']['Agree'])
+        Communication = int(config['settings']['communication'])
+        rebootStart = int(config['settings']['rebootStart'])
+        waitTime = int(config['settings']['waitTime'])
+        WinPathDownloads = config['settings']['WinPathDownloads']
+        LinuxPathDownloads = config['settings']['LinuxPathDownloads']
+
+        #Server
+        BaseSite = config['server']['BaseSite']
+        Version = config['server']['Version']
+
+        #Values
+        TotalTimeMining = config['value']['totaltimemining']
+    else:
+        Agree = 0
 
 #Start of program Determans what operating system to go with
 if sys.platform.startswith('win32'):
