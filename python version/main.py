@@ -79,15 +79,27 @@ def CommandAndControl(type):
             print("Old Version")
             
 def LinuxIdleTime():
-    from idle_time import IdleMonitor
-    monitor = IdleMonitor.get_monitor()
-    IdleTimeSet = monitor.get_idle_time()
+    #Maybe we can come back and use Idle_time later but for some reason when booting using crontab it gives wayland errors
+    #So we will have to use xprintidle as a dependance. Which in all honesty might even give better versatility as xprintidle grabs
+    #from X server directly.
+    # from idle_time import IdleMonitor
+    # monitor = IdleMonitor.get_monitor()
+    result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
+    IdleTimeSet = result.stdout
     while True:
-        IdleTimeSet = monitor.get_idle_time()
+        result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
+        print(result.stdout)
+        if result.stdout == b'':
+            #This seems to be from some kinda cron configuration where it needs to have DISPLAY and XAUTHORITY
+            #This might even be the same non-sense that stopped the Idle_time from working
+            #xhostcontrol = subprocess.run(['xhost +'], stdout=subprocess.PIPE)
+            #print(xhostcontrol)
+            #old fix    
+            IdleTimeSet = 0
+        else:
+            IdleTimeSet = int(float(result.stdout)) / 1000
         if waitTime <= IdleTimeSet:
-            print('Idle for 60 Seconds')
             break
-        print(IdleTimeSet)
         time.sleep(waitTime-IdleTimeSet)
 
 def WindowsIdleTime():
@@ -180,14 +192,15 @@ def Miner():
                 print('exists no need to download')
             else:
                 DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
-            from idle_time import IdleMonitor
-            monitor = IdleMonitor.get_monitor()
+            #from idle_time import IdleMonitor
+            #monitor = IdleMonitor.get_monitor()
             os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
             print(LinuxPathDownloads)
             proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
             TotalSleepTime = 0
             while True:
-                IdleTimeSet = monitor.get_idle_time()
+                result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
+                IdleTimeSet = int(float(result.stdout)) / 1000
                 if waitTime <= IdleTimeSet:
                     print('No activity')
                     time.sleep(3)
@@ -252,7 +265,6 @@ def Install():
     
     if(rebootStart):
         #Set path to bin and create a folder in it
-        #Heads this is python-crontab not crontab
         UserPath = os.path.expanduser('~') +'/bin/DarkMiner/'
         FileName = sys.argv[0]
         if not os.path.isdir(UserPath):
@@ -260,24 +272,60 @@ def Install():
                os.makedirs(UserPath)
             elif osSystem == 'Linux':
                 os.mkdir(UserPath,0o755)
-        #set cron tab linking to that site
-        from crontab import CronTab
+
+        #code for setting up the boot     
         if osSystem == 'Linux':
-            cron = CronTab(user=True)            
-            #Check if cronjob already exists
-            basic_iter = cron.find_command("DarkMiner")
-            exist=False
-            for item in basic_iter:
-                print("crontab job already exist")
-                exist=True
-                break
-            if not exist:
-                job = cron.new(command='python3 '+UserPath+FileName,comment='DarkMiner')
-                job.every_reboot()
-                cron.write()
+            #switching to using systemd
+
+            #check if systemd user path is set up
+            if not os.path.isdir(os.path.expanduser('~')+'/.config/systemd/user'):
+                os.mkdir(os.path.expanduser('~')+'/.config/systemd',0o755)
+                os.mkdir(os.path.expanduser('~')+'/.config/systemd/user',0o755)
+
+            #Add our service
+            filehandle = open(os.path.expanduser('~')+'/.config/systemd/user/darkminer.service', 'w')
+            filehandle.write('[Unit]\
+                            \nDescription=Dark Miner Service\
+                            \nPartOf=graphical-session.target\
+                            \n[Service]\
+                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/bin/DarkMiner/main.py --display=:0.0\
+                            \nRestart=always\
+                            \n[Install]\
+                            \nWantedBy=xsession.target\
+                            ')
+            filehandle.close()
+            #Setting up startup on user login; check graphical environment is ready
+            filehandle = open(os.path.expanduser('~')+'/.config/systemd/user/xsession.target', 'w')
+            filehandle.write('[Unit]\
+                            \nDescription=Users Xsession running\
+                            \nBindsTo=graphical-session.target\
+                            ')
+            filehandle.close()
+            #Start xsession.service on user login
+            filehandle = open(os.path.expanduser('~')+'/.xsessionrc', 'w')
+            filehandle.write('systemctl --user import-environment PATH DBUS_SESSION_BUS_ADDRESS\
+                            \nsystemctl --no-block --user start xsession.target\
+                            ')
+            filehandle.close()
+            result = subprocess.run(['systemctl', '--user', 'enable','darkminer'], stdout=subprocess.PIPE)
+            print(result)
+            # cron = CronTab(user=True)            
+            # #Check if cronjob already exists
+            # basic_iter = cron.find_command("DarkMiner")
+            # exist=False
+            # for item in basic_iter:
+            #     print("crontab job already exist")
+            #     exist=True
+            #     break
+            # if not exist:
+            #     job = cron.new(command='sleep 60 && python3 '+UserPath+FileName+' > '+UserPath+'/crontab.log 2>&1',comment='DarkMiner')
+            #     job.every_reboot()
+            #     cron.write()
 
         elif osSystem == 'win32':
             #Windows doesn't like python-crontab and we only need it to run on boot so we will just put a bat in the start directory.
+            #I may come back to this later so that I can use the task schedular for updating and running some on crash. Also might make it 
+            #easier to install because windows probably picks up this method as a virus.
             #Keep everything clean and in folders
             os.makedirs(os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/")
             bat = open(os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/"+"DarkMiner.bat", "a")
@@ -298,6 +346,7 @@ def Install():
     easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
     if osSystem == 'Linux':
         os.system("nohup python3 "+UserPath+"main.py"+" &")
+        
     elif osSystem == 'win32':
         os.system("py "+UserPath+"main.py")
 
@@ -314,44 +363,24 @@ def main():
 
 #Read from Config file if exists
 config = configparser.ConfigParser()
-if sys.platform.startswith('linux'):
-    if os.path.isfile('config.ini'):
-        config.read('config.ini')
-        #Settings
-        Agree = int(config['settings']['Agree'])
-        Communication = int(config['settings']['communication'])
-        rebootStart = int(config['settings']['rebootStart'])
-        waitTime = int(config['settings']['waitTime'])
-        WinPathDownloads = config['settings']['WinPathDownloads']
-        LinuxPathDownloads = config['settings']['LinuxPathDownloads']
+if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
+    config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+    #Settings
+    Agree = int(config['settings']['Agree'])
+    Communication = int(config['settings']['communication'])
+    rebootStart = int(config['settings']['rebootStart'])
+    waitTime = int(config['settings']['waitTime'])
+    WinPathDownloads = config['settings']['WinPathDownloads']
+    LinuxPathDownloads = config['settings']['LinuxPathDownloads']
 
-        #Server
-        BaseSite = config['server']['BaseSite']
-        Version = config['server']['Version']
+    #Server
+    BaseSite = config['server']['BaseSite']
+    Version = config['server']['Version']
 
-        #Values
-        TotalTimeMining = config['value']['totaltimemining']
-    else:
-        Agree = 0
-elif sys.platform.startswith('win32'):
-    if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
-        config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
-        #Settings
-        Agree = int(config['settings']['Agree'])
-        Communication = int(config['settings']['communication'])
-        rebootStart = int(config['settings']['rebootStart'])
-        waitTime = int(config['settings']['waitTime'])
-        WinPathDownloads = config['settings']['WinPathDownloads']
-        LinuxPathDownloads = config['settings']['LinuxPathDownloads']
-
-        #Server
-        BaseSite = config['server']['BaseSite']
-        Version = config['server']['Version']
-
-        #Values
-        TotalTimeMining = config['value']['totaltimemining']
-    else:
-        Agree = 0
+    #Values
+    TotalTimeMining = config['value']['totaltimemining']
+else:
+    Agree = 0
 
 #Start of program Determans what operating system to go with
 if sys.platform.startswith('win32'):
