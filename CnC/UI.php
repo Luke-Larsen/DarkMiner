@@ -8,6 +8,26 @@ ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 require 'config.php';
 
+function secondsToTime($ss) {
+    $s = $ss%60;
+    $m = floor(($ss%3600)/60);
+    $h = floor(($ss%86400)/3600);
+    $d = floor(($ss%2592000)/86400);
+    $M = floor($ss/2592000);
+    if($M > 0){
+        return "$M months, $d days, $h hours, $m minutes, $s seconds";
+    }elseif($d >0){
+        return "$d days, $h hours, $m minutes, $s seconds";
+    }elseif($h > 0){
+        return "$h hours, $m minutes, $s seconds";
+    }elseif($m > 0){
+        return "$m minutes, $s seconds";
+    }elseif($s > 0){
+        return "$s seconds";
+    }
+    
+}
+
 //Get domain server is hosted on
 $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 
@@ -105,7 +125,13 @@ if(isset($_POST['passwordFormSubmit'])){
             $Computer = $row['Name'];
             $Active = $row['Active'];
             $TotalMinedTime = $row['TotalMinedTime'];
-            echo "$Computer : $Active : $TotalMinedTime <br>";
+            $TotalMinedTimeHumanReadable = secondsToTime($TotalMinedTime);
+            if($Active){
+                echo "<span style='color:green'>$Computer : $TotalMinedTimeHumanReadable </span><br>";
+            }else{
+                echo "<span style='color:red'>$Computer : $TotalMinedTimeHumanReadable <br>";
+            }
+            
         }
     }
 }

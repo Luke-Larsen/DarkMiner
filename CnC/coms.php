@@ -45,7 +45,7 @@ if(($result ->num_rows == 0)){
             $MiningTime = round($MiningTime,0,PHP_ROUND_HALF_UP);
             $MiningTime += $TTM;
             $stmt = $con->prepare("UPDATE Work SET Active=?, Mining=?, ip=?, TotalMinedTime=? WHERE name=?");
-            $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTime,$User);
+            $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTotalTime,$User);
             $stmt->execute();
             $stmt->close();
             echo "1";

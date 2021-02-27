@@ -1,6 +1,5 @@
-# Version 1 2/11/21
-# All the new stuff mainly work on Linux it has not been test on windows at all
-# Talks to a server
+# Version 1 2/26/21
+# Tested and works on both windows 10 and Ubuntu 20.10
 import sys
 import platform
 import signal
@@ -10,10 +9,19 @@ import subprocess
 import configparser
 import multiprocessing
 import easygui
+
 #Website you are hosting the controlling server on
 #BaseSite = 'http://localhost/DarkMiner/'
 
+#SHA256 of your downtime program
+SHA256Program = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
+
+
 #functions
+def errorOccurred(errorCode):
+    easygui.msgbox(errorCode,"ERROR OCCURRED")
+    sys.exit("ERROR")
+
 def UpdateTotalMiningTime(value):
     config.read('config.ini')
     TotalTimeMining = config['value']['TotalTimeMining']
@@ -21,7 +29,7 @@ def UpdateTotalMiningTime(value):
     config['value'] = {
         'TotalTimeMining' : NewTotalTimeMining
     }
-    with open('config.ini', 'w+') as configfile:
+    with open(os.path.expanduser('~') +'/bin/DarkMiner/config.ini', 'w+') as configfile:
         config.write(configfile)
 
 def CommandAndControl(type):
@@ -82,22 +90,14 @@ def LinuxIdleTime():
     #Maybe we can come back and use Idle_time later but for some reason when booting using crontab it gives wayland errors
     #So we will have to use xprintidle as a dependance. Which in all honesty might even give better versatility as xprintidle grabs
     #from X server directly.
-    # from idle_time import IdleMonitor
+    #from idle_time import IdleMonitor
     # monitor = IdleMonitor.get_monitor()
     result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
     IdleTimeSet = result.stdout
     while True:
         result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
         print(result.stdout)
-        if result.stdout == b'':
-            #This seems to be from some kinda cron configuration where it needs to have DISPLAY and XAUTHORITY
-            #This might even be the same non-sense that stopped the Idle_time from working
-            #xhostcontrol = subprocess.run(['xhost +'], stdout=subprocess.PIPE)
-            #print(xhostcontrol)
-            #old fix    
-            IdleTimeSet = 0
-        else:
-            IdleTimeSet = int(float(result.stdout)) / 1000
+        IdleTimeSet = int(float(result.stdout)) / 1000
         if waitTime <= IdleTimeSet:
             break
         time.sleep(waitTime-IdleTimeSet)
@@ -168,7 +168,7 @@ def Miner():
             LastActivity = win32api.GetLastInputInfo()
             while True:
                 if LastActivity != win32api.GetLastInputInfo():
-                    print('Activity! Eject!')
+                    #print('Activity! Eject!')
                     proc.terminate()  # Terminates Child Process
                     UpdateTotalMiningTime(TotalSleepTime)
                     if Communication == 2:
@@ -192,19 +192,29 @@ def Miner():
                 print('exists no need to download')
             else:
                 DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
-            #from idle_time import IdleMonitor
-            #monitor = IdleMonitor.get_monitor()
+            #Check to make sure hashes match otherwise error out
+            import hashlib
+            sha256_hash = hashlib.sha256()
+            with open(LinuxPathDownloads+'xmrigcg',"rb") as f:
+                # Read and update hash string value in blocks of 4K
+                for byte_block in iter(lambda: f.read(4096),b""):
+                    sha256_hash.update(byte_block)
+                #print(sha256_hash.hexdigest())
+                if sha256_hash.hexdigest() != SHA256Program:
+                    errorOccurred("HASH MISMATCH"); 
+
             os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
-            print(LinuxPathDownloads)
+            #print(LinuxPathDownloads)
             proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
             TotalSleepTime = 0
+            print("Starting downtime program")
             while True:
                 result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
                 IdleTimeSet = int(float(result.stdout)) / 1000
                 if waitTime <= IdleTimeSet:
-                    print('No activity')
+                    #print('No activity')
                     time.sleep(3)
-                    TotalSleepTime += IdleTimeSet
+                    TotalSleepTime += 3
                 else:
                     print('Activity! Eject!')
                     os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # Send the signal to all the process groups
@@ -241,7 +251,6 @@ def Install():
             if fieldValues is None:
                 break
 
-
         #writting to config
         config['settings'] = {
             "Agree" : 1,
@@ -276,7 +285,6 @@ def Install():
         #code for setting up the boot     
         if osSystem == 'Linux':
             #switching to using systemd
-
             #check if systemd user path is set up
             if not os.path.isdir(os.path.expanduser('~')+'/.config/systemd/user'):
                 os.mkdir(os.path.expanduser('~')+'/.config/systemd',0o755)
@@ -309,21 +317,8 @@ def Install():
             filehandle.close()
             result = subprocess.run(['systemctl', '--user', 'enable','darkminer'], stdout=subprocess.PIPE)
             print(result)
-            # cron = CronTab(user=True)            
-            # #Check if cronjob already exists
-            # basic_iter = cron.find_command("DarkMiner")
-            # exist=False
-            # for item in basic_iter:
-            #     print("crontab job already exist")
-            #     exist=True
-            #     break
-            # if not exist:
-            #     job = cron.new(command='sleep 60 && python3 '+UserPath+FileName+' > '+UserPath+'/crontab.log 2>&1',comment='DarkMiner')
-            #     job.every_reboot()
-            #     cron.write()
 
         elif osSystem == 'win32':
-            #Windows doesn't like python-crontab and we only need it to run on boot so we will just put a bat in the start directory.
             #I may come back to this later so that I can use the task schedular for updating and running some on crash. Also might make it 
             #easier to install because windows probably picks up this method as a virus.
             #Keep everything clean and in folders
