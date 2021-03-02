@@ -1,5 +1,11 @@
 # Version 1 2/26/21
 # Tested and works on both windows 10 and Ubuntu 20.10
+
+#Heads up if the only reason you want this script is for mining xmr on idle time it seems like xmrrig
+#Might have just added all features required with --pause-on-active=N
+#There are going to be a lot more features for this script as time goes on that won't just
+#be about mining, it will be a total suite for using downtime on computers.
+
 import sys
 import platform
 import signal
@@ -9,13 +15,15 @@ import subprocess
 import configparser
 import multiprocessing
 import easygui
+import requests
 
 #Website you are hosting the controlling server on
-#BaseSite = 'http://localhost/DarkMiner/'
-
+#Script Version
+ScriptVersion = '1'
 #SHA256 of your downtime program
-SHA256Program = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
-
+SHA256ProgramDefault = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
+#Github Repo link
+GithubLink = 'https://api.github.com/repos/Luke-Larsen/DarkMiner'
 
 #functions
 def errorOccurred(errorCode):
@@ -32,8 +40,13 @@ def UpdateTotalMiningTime(value):
     with open(os.path.expanduser('~') +'/bin/DarkMiner/config.ini', 'w+') as configfile:
         config.write(configfile)
 
+def UpdateScript():
+    print("Ran Update")
+    #Download new script save as something like main0.py
+    #write a new script to delete current script and rename main0.py to main.py
+    #run main.py 
+
 def CommandAndControl(type):
-    import requests
     print("Talked to server")
     if type == 'startSignal':
         URL = BaseSite + 'coms.php'
@@ -85,7 +98,31 @@ def CommandAndControl(type):
         data = r.json()
         if int(data) > int(Version):
             print("Old Version")
-            
+            if not UpdateFrom: #If not set or set to default check github for update 
+                #Check github for a newer version of the script
+                githubReleaseLink = GithubLink + "/releases/latest"
+                headers = {
+                        'accept': 'application/vnd.github.v3+json'
+                    }
+                r = requests.get(url=githubReleaseLink,headers=headers)
+                data = r.json()
+                if(data):
+                    if not data['message'] == "Not Found":
+                        print(data)
+                        if(int(data) > int(Version)):
+                            print("Newer version found on github")
+                        elif(int(data)==int(Version)):
+                            print("No new version found on github")
+                        else:
+                            print("Only older versions found on github")
+                    else:
+                        print("No versions on github")
+                else:
+                    print("No github data")
+            else: #Set to something custom or 1
+                #Allow updates from the CNC module
+                print("Coming soon")
+                
 def LinuxIdleTime():
     #Maybe we can come back and use Idle_time later but for some reason when booting using crontab it gives wayland errors
     #So we will have to use xprintidle as a dependance. Which in all honesty might even give better versatility as xprintidle grabs
@@ -130,6 +167,16 @@ def DownloadData(url, direc):
         print('Success Downloading files')
 
 def Miner():
+    #UPDATE: Check if the idle time is less then 1 minute and if it is increase the idle time required in the config.
+    #This way we can create a system that will stop quick starting and stopping which is generally useless as it doesn't
+    #give any programs any time to do anything useful.
+    #Later on I could also just log the time that the user is idle most and run it based on those logs
+    #we are in python after all that is where machine learning thrives.
+    #UPDATE1: Add another mining program or protocol ie nimiq for gpu mining which could be done at the same time or 
+    #selected as the only running process
+    #UPDATE2: Add a option to run sheepit render farm 
+    #UPDATE3: Add a custom option to allow CNC to run a program on down time. Probably wait a bit on this as this could
+    #a rather large security concern
     if Communication == 2:
         CommandAndControl("startSignal")
     if osSystem == 'win32':
@@ -177,19 +224,41 @@ def Miner():
                 elif LastActivity == win32api.GetLastInputInfo():
                     time.sleep(3)
                     TotalSleepTime += 3
-                    print(TotalSleepTime)
+                    #print(TotalSleepTime)
             main()  # Back to our main function and loop
     elif osSystem == 'Linux':
         if is_64bits:
             if not os.path.exists(LinuxPathDownloads):
                 os.mkdir(LinuxPathDownloads)
             print('ran')
-            if os.path.exists(LinuxPathDownloads + 'xmrigcg'):
-                print('exists no need to download')
+            #Switch this over to using the xmrig github repos.
+            if not os.path.exists(LinuxPathDownloads+'/xmrig'):
+                os.mkdir(LinuxPathDownloads+'/xmrig')
+            if os.path.exists(LinuxPathDownloads + '/xmrig/xmrigcg'):
+                print('mining binary exists no need to download')
             else:
-                DownloadData(BaseSite + 'Linux/' + 'xmrMiner', LinuxPathDownloads + 'xmrigcg')
+                #grab the github data and then download the latest version and update the sha256Sums
+                githubReleaseLink ="https://api.github.com/repos/xmrig/xmrig/releases/latest"
+                headers = {
+                        'accept': 'application/vnd.github.v3+json'
+                    }
+                r = requests.get(url=githubReleaseLink,headers=headers)
+                data = r.json()
+                NewestMinerVersion = data['tag_name']
+                DownloadMinerURL = 'https://github.com/xmrig/xmrig/releases/download/'+NewestMinerVersion+'/xmrig-'+NewestMinerVersion[1:6]+'-linux-x64.tar.gz'
+                print(DownloadMinerURL)
+                DownloadData(DownloadMinerURL, LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
+                #Extract the tar
+                import tarfile
+                my_tar = tarfile.open(LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
+                my_tar.extractall(LinuxPathDownloads + '/xmrig/') # specify which folder to extract to
+                my_tar.close()
+                #Set miner version so script can find it
+
+
+            
             if os.path.exists(LinuxPathDownloads + 'config.json'):
-                print('exists no need to download')
+                print('config exists no need to download')
             else:
                 DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
             #Check to make sure hashes match otherwise error out
@@ -259,13 +328,15 @@ def Install():
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
             "LinuxPathDownloads" : os.path.expanduser('~') +'/bin/DarkMiner/',
+            "UpdateFrom": 0 #0 github, 1 CNC
         }
         config['server'] = {
-            "Version" : 1,
+            "Version" : ScriptVersion,
             'BaseSite' : fieldValues[0]
         }
         config['value'] = {
-            'TotalTimeMining' : 0
+            'TotalTimeMining' : 0,
+            'SHA256Program': SHA256ProgramDefault
         }
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
@@ -367,6 +438,12 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
     waitTime = int(config['settings']['waitTime'])
     WinPathDownloads = config['settings']['WinPathDownloads']
     LinuxPathDownloads = config['settings']['LinuxPathDownloads']
+    try:
+        UpdateFrom = config['settings']['UpdateFrom']
+    except KeyError as e:
+        #No value set because this could be an update to a running system
+        UpdateFrom = 0
+
 
     #Server
     BaseSite = config['server']['BaseSite']
@@ -374,6 +451,10 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
 
     #Values
     TotalTimeMining = config['value']['totaltimemining']
+    try:
+        SHA256Program = config['value']['SHA256Program']
+    except KeyError as e:
+        SHA256Program = SHA256ProgramDefault
 else:
     Agree = 0
 
