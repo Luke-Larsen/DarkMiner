@@ -57,83 +57,104 @@ if(isset($_POST['passwordChangeFormSubmit'])){
 <html>
     <head>
         <script src='https://www.google.com/recaptcha/api.js'></script>
+        <link href="assets/css/style.css" rel="stylesheet" type="text/css" media="all">
     </head>
-<?php
-if(isset($_GET['logout'])){
-    unset($_SESSION["USER"]);
-    session_regenerate_id();
-    session_unset();
-    session_destroy();
-    session_write_close();
-    setcookie(session_name(),'',0,'/');
-    $actual_link = str_replace( "?logout=1", "", $actual_link );
-    echo "
-    Logged out. 
-    <a href='$actual_link'>Click here if not redirected</a>
-    <script>location.href = '$actual_link';</script>
-    ";
-}
+    <body>
+        <?php
+        if(isset($_GET['logout'])){
+            unset($_SESSION["USER"]);
+            session_regenerate_id();
+            session_unset();
+            session_destroy();
+            session_write_close();
+            setcookie(session_name(),'',0,'/');
+            $actual_link = str_replace( "?logout=1", "", $actual_link );
+            echo "
+            Logged out. 
+            <a href='$actual_link'>Click here if not redirected</a>
+            <script>location.href = '$actual_link';</script>
+            ";
+        }
 
-if(isset($_POST['passwordFormSubmit'])){
-    $userSuppliedPassword = $_POST['password'];
-    $captcha = $_POST['g-recaptcha-response'];
-    $rsp  = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=$googleCaptchaSecret&response=$captcha");
-    $arr = json_decode($rsp,TRUE);
-    if($arr['success']){
-        if($hashPassword == "MySecurePassword" && $userSuppliedPassword == $hashPassword){
-            exit("
-            Please change your password:
-            <form action='' name='passwordChangeForm' method='post'>
-                Password : <input name='password' type='text'>
-                Confirm Password : <input name='password1' type='text'>
-                <input name='passwordChangeFormSubmit' type='submit' value='Submit'>
-            </form>
-            ");
+        if(isset($_POST['passwordFormSubmit'])){
+            $userSuppliedPassword = $_POST['password'];
+            $captcha = $_POST['g-recaptcha-response'];
+            $rsp  = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=$googleCaptchaSecret&response=$captcha");
+            $arr = json_decode($rsp,TRUE);
+            if($arr['success']){
+                if($hashPassword == "MySecurePassword" && $userSuppliedPassword == $hashPassword){
+                    exit("
+                    Please change your password:
+                    <form action='' name='passwordChangeForm' method='post'>
+                        Password : <input name='password' type='text'>
+                        Confirm Password : <input name='password1' type='text'>
+                        <input name='passwordChangeFormSubmit' type='submit' value='Submit'>
+                    </form>
+                    ");
+                }else{
+                    if (password_verify($userSuppliedPassword, $hashPassword)){
+                        session_regenerate_id();
+                        //UPDATE: to set the session with a secure key and cookie to keep user logged in
+                        $_SESSION["USER"] = 'User';
+                        echo "Success     
+                        <a href='$actual_link'>Click here if not redirected</a>
+                        <script>location.href = '$actual_link';</script>";
+                    }else{
+                        echo "wrong password";
+                    }
+                }
+            }else{
+                echo "Bad captcha";
+            }
+
         }else{
-            if (password_verify($userSuppliedPassword, $hashPassword)){
-                session_regenerate_id();
-                //UPDATE: to set the session with a secure key and cookie to keep user logged in
-                $_SESSION["USER"] = 'User';
-                echo "Success     
-                <a href='$actual_link'>Click here if not redirected</a>
-                <script>location.href = '$actual_link';</script>";
+            //Stop user if they aren't proven to be authorized
+            if(!isset($_SESSION['USER'])){
+                echo "
+                    <form action='' name='passwordForm' method='post'>
+                        Password : <input name='password' type='password'>
+                        <input name='passwordFormSubmit' type='submit' value='Submit'>
+                        <div class='g-recaptcha' data-sitekey='$googleCaptchaPublic'></div>
+                    </form>";
             }else{
-                echo "wrong password";
+                //page stuff
+                echo "<a href='?logout=1'>logout</a><br>";
+                //Data about computers
+                $stmt = $con->prepare("select * from Work");
+                $stmt->execute();
+                $result = $stmt->get_result();
+                echo "<h2>Computers</h2>";
+                echo "
+                <table style='width:100%'>
+                    <tr>
+                        <th>Name</th>
+                        <th>Total Idle Time</th>
+                    </tr>        
+                ";
+                while($row = mysqli_fetch_assoc($result)){
+                    $Computer = $row['Name'];
+                    $Active = $row['Active'];
+                    $TotalMinedTime = $row['TotalMinedTime'];
+                    $TotalMinedTimeHumanReadable = secondsToTime($TotalMinedTime);
+                    if($Active){
+                        echo "
+                            <tr>
+                                <td style='color:green'>$Computer</td>
+                                <td>$TotalMinedTimeHumanReadable</td> 
+                            </tr>
+                            ";
+                    }else{
+                        echo "
+                            <tr>
+                                <td style='color:red'>$Computer</td>
+                                <td>$TotalMinedTimeHumanReadable</td> 
+                            </tr>
+                        ";
+                    }
+                    
+                }
             }
         }
-    }else{
-        echo "Bad captcha";
-    }
-
-}else{
-    //Stop user if they aren't proven to be authorized
-    if(!isset($_SESSION['USER'])){
-        echo "
-            <form action='' name='passwordForm' method='post'>
-                Password : <input name='password' type='text'>
-                <input name='passwordFormSubmit' type='submit' value='Submit'>
-                <div class='g-recaptcha' data-sitekey='$googleCaptchaPublic'></div>
-            </form>";
-    }else{
-        //page stuff
-        echo "<a href='?logout=1'>logout</a><br>";
-        //Data about computers
-        $stmt = $con->prepare("select * from Work");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while($row = mysqli_fetch_assoc($result)){
-            $Computer = $row['Name'];
-            $Active = $row['Active'];
-            $TotalMinedTime = $row['TotalMinedTime'];
-            $TotalMinedTimeHumanReadable = secondsToTime($TotalMinedTime);
-            if($Active){
-                echo "<span style='color:green'>$Computer : $TotalMinedTimeHumanReadable </span><br>";
-            }else{
-                echo "<span style='color:red'>$Computer : $TotalMinedTimeHumanReadable <br>";
-            }
-            
-        }
-    }
-}
-?>
+        ?>
+    </body>
 </html>

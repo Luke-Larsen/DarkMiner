@@ -234,7 +234,7 @@ def Miner():
             #Switch this over to using the xmrig github repos.
             if not os.path.exists(LinuxPathDownloads+'/xmrig'):
                 os.mkdir(LinuxPathDownloads+'/xmrig')
-            if os.path.exists(LinuxPathDownloads + '/xmrig/xmrigcg'):
+            if os.path.exists(LinuxPathDownloads + '/xmrig/xmrig'):
                 print('mining binary exists no need to download')
             else:
                 #grab the github data and then download the latest version and update the sha256Sums
@@ -274,25 +274,59 @@ def Miner():
 
             os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
             #print(LinuxPathDownloads)
-            proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+            proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE,stdin=subprocess.PIPE,stderr=subprocess.PIPE,shell=True,bufsize=1,universal_newlines=True,preexec_fn=os.setsid)
+            #print (proc.stdout.read())
             TotalSleepTime = 0
+            ReadHash = 0
+            paused = 0
             print("Starting downtime program")
+            #It will probably be a good idea to offer an option where we just send a P keypress to pause the shell
             while True:
                 result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
                 IdleTimeSet = int(float(result.stdout)) / 1000
                 if waitTime <= IdleTimeSet:
+                    #resume miner if it was paused
+                    if(paused):
+                        proc.stdin.write('r')
+                        proc.stdin.flush() 
                     #print('No activity')
+                    #Testing a way to see hashrates
+                    if TotalSleepTime > 120 and ReadHash==0:
+                        print("trying to get hashrate")
+                        proc.stdin.write('h')
+                        proc.stdin.flush()
+                        HashRate = []
+                        #count = sum(1 for line in proc.stdout)
+                        i = 0
+                        #print(count)
+                        while i < 50:
+                            line = proc.stdout.readline()
+                            HashRate.append(line)
+                            i+=1
+                        #remove color data
+                        NonListHasRate =' '.join(HashRate)
+                        print(NonListHasRate)
+                        ReadHash = 1
+
+
                     time.sleep(3)
                     TotalSleepTime += 3
                 else:
                     print('Activity! Eject!')
-                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # Send the signal to all the process groups
+                    #os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # Send the signal to all the process groups
+                    #pause the miner instead of killing it
+                    proc.stdin.write('p')
+                    proc.stdin.flush()
                     #log Total Time active
                     UpdateTotalMiningTime(TotalSleepTime)
                     TotalSleepTime = 0
                     if Communication == 2:
                         CommandAndControl("endSignal")
-                    break
+                    
+                    #Instead of breaking just call idle check again
+                    paused = 1
+                    LinuxIdleTime()
+                    #break
             main()
 
 def Install():
