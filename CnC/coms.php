@@ -38,8 +38,11 @@ if(($result ->num_rows == 0)){
 }else{
     if(isset($Type)){
         if($Type == 'checkVersion'){
+            //Reply with the newest server version
+            //Soon this will be used to update clients
             echo $serverVersion;
         }else{
+            //Otherwise the client is telling us about it's self so we will update the server
             $MiningTime = time() - $row['Mining'];
             $MiningTime /= 60;
             $MiningTime = round($MiningTime,0,PHP_ROUND_HALF_UP);
@@ -89,5 +92,3 @@ if(($result ->num_rows == 0)){
         echo $serverVersion;
     }
 }
-
-?>
