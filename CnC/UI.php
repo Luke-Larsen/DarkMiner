@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-//UPDATE: Create a lockdown mode that will 404 anyone who doesn't have a cookie or php session
+//UPDATE: Create a lock down mode that will 404 anyone who doesn't have a cookie or php session
 
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
@@ -25,7 +25,6 @@ function secondsToTime($ss) {
     }elseif($s > 0){
         return "$s seconds";
     }
-    
 }
 
 //Get domain server is hosted on
