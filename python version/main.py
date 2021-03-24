@@ -1,27 +1,14 @@
-# Version 1 2/26/21
-# Tested and works on both windows 10 and Ubuntu 20.10
+# Version 1
+#TODO clean up these imports now that we are doing more modular processing
+import sys, signal,platform,os,time,subprocess,configparser,multiprocessing,easygui,requests
+from Communicate import *
+from functions import LinuxIdleTime,WindowsIdleTime
 
-#Heads up if the only reason you want this script is for mining xmr on idle time it seems like xmrrig
-#Might have just added all features required with --pause-on-active=N
-#There are going to be a lot more features for this script as time goes on that won't just
-#be about mining, it will be a total suite for using downtime on computers.
-
-import sys
-import platform
-import signal
-import os
-import time
-import subprocess
-import configparser
-import multiprocessing
-import easygui
-import requests
-
-#Website you are hosting the controlling server on
 #Script Version
 ScriptVersion = '1'
-#SHA256 of your downtime program
-SHA256ProgramDefault = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
+#SHA256 of your downtime programs
+SHA256ProgramMiner = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
+SHA256ProgramSheepit = 'e4674e9e1be5bfd843c10dd9e4c42767608e3777760c83f9ccdfad5d9cffe59c'
 #Github Repo link
 GithubLink = 'https://api.github.com/repos/Luke-Larsen/DarkMiner'
 
@@ -42,112 +29,6 @@ def UpdateTotalMiningTime(value):
 
 def UpdateScript():
     print("Ran Update")
-    #Download new script save as something like main0.py
-    #write a new script to delete current script and rename main0.py to main.py
-    #run main.py 
-
-def CommandAndControl(type):
-    print("Talked to server")
-    if type == 'startSignal':
-        URL = BaseSite + 'coms.php'
-        config.read('config.ini')
-        TotalTimeMining = config['value']['TotalTimeMining']
-        #Diffrent OS giving problems with os.environ. This solution worked for windows
-        #I might need to check it on more platforms
-        try:
-            PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
-        except KeyError as e:
-            print('Computer no work right: "%s"' % str(e))
-            try:
-                PARAMS = {'Type':'startSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining,'version': Version}
-            except KeyError as e:
-                print('Computer really no work right: "%s"' % str(e))
-        r = requests.get(url=URL, params=PARAMS)
-        data = r.json()
-        print(data)
-    elif type == 'endSignal':
-        URL = BaseSite + 'coms.php'
-        config.read('config.ini')
-        TotalTimeMining = config['value']['TotalTimeMining']
-        try:
-            PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
-        except KeyError as e:
-            print('Computer no work right: "%s"' % str(e))
-            try:
-                PARAMS = {'Type':'endSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining,'version': Version}
-            except KeyError as e:
-                print('Computer really no work right: "%s"' % str(e))
-        r = requests.get(url=URL, params=PARAMS)
-        data = r.json()
-        print(data)
-    elif type == 'checkVersion':
-        URL = BaseSite + 'coms.php'
-        config.read('config.ini')
-        TotalTimeMining = config['value']['TotalTimeMining']
-        #Diffrent OS giving problems with os.environ. This solution worked for windows
-        #I might need to check it on more platforms
-        try:
-            PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
-        except KeyError as e:
-            print('Computer no work right: "%s"' % str(e))
-            try:
-                PARAMS = {'Type':'checkVersion','name': os.getlogin()}
-            except KeyError as e:
-                print('Computer really no work right: "%s"' % str(e))
-        r = requests.get(url=URL, params=PARAMS)
-        data = r.json()
-        if int(data) > int(Version):
-            print("Old Version")
-            if not UpdateFrom: #If not set or set to default check github for update 
-                #Check github for a newer version of the script
-                githubReleaseLink = GithubLink + "/releases/latest"
-                headers = {
-                        'accept': 'application/vnd.github.v3+json'
-                    }
-                r = requests.get(url=githubReleaseLink,headers=headers)
-                data = r.json()
-                if(data):
-                    if not data['message'] == "Not Found":
-                        print(data)
-                        if(int(data) > int(Version)):
-                            print("Newer version found on github")
-                        elif(int(data)==int(Version)):
-                            print("No new version found on github")
-                        else:
-                            print("Only older versions found on github")
-                    else:
-                        print("No versions on github")
-                else:
-                    print("No github data")
-            else: #Set to something custom or 1
-                #Allow updates from the CNC module
-                print("Coming soon")
-                
-def LinuxIdleTime():
-    #Maybe we can come back and use Idle_time later but for some reason when booting using crontab it gives wayland errors
-    #So we will have to use xprintidle as a dependance. Which in all honesty might even give better versatility as xprintidle grabs
-    #from X server directly.
-    #from idle_time import IdleMonitor
-    # monitor = IdleMonitor.get_monitor()
-    result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
-    IdleTimeSet = result.stdout
-    while True:
-        result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
-        print(result.stdout)
-        IdleTimeSet = int(float(result.stdout)) / 1000
-        if waitTime <= IdleTimeSet:
-            break
-        time.sleep(waitTime-IdleTimeSet)
-
-def WindowsIdleTime():
-    import win32api
-    while True:
-        print('CheckLoop')
-        LastActivity = win32api.GetLastInputInfo()
-        time.sleep(waitTime)
-        if LastActivity == win32api.GetLastInputInfo():
-            print('No Activity ~ Prepare to launch!')
-            break
 
 def Is64Windows():
     return 'PROGRAMFILES(X86)' in os.environ
@@ -158,27 +39,14 @@ def GetProgramFiles32():
     else:
         return True
 
-def DownloadData(url, direc):
-    import requests
-    print('Beginning file download with requests')
-    r = requests.get(url)
-    with open(direc, 'wb') as f:
-        f.write(r.content)
-        print('Success Downloading files')
+from functions import DownloadData
 
 def Miner():
-    #UPDATE: Check if the idle time is less then 1 minute and if it is increase the idle time required in the config.
-    #This way we can create a system that will stop quick starting and stopping which is generally useless as it doesn't
-    #give any programs any time to do anything useful.
-    #Later on I could also just log the time that the user is idle most and run it based on those logs
-    #we are in python after all that is where machine learning thrives.
-    #UPDATE1: Add another mining program or protocol ie nimiq for gpu mining which could be done at the same time or 
-    #selected as the only running process
-    #UPDATE2: Add a option to run sheepit render farm 
-    #UPDATE3: Add a custom option to allow CNC to run a program on down time. Probably wait a bit on this as this could
-    #a rather large security concern
+    #TODO: Check if the last idle time is less then 1 minute and if it is increase the idle time required in the config.
+    #TODO: Start logging away time so that we can build a simple computer model of downtime to prevent false positives
+
     if Communication == 2:
-        CommandAndControl("startSignal")
+        startSignal(BaseSite)
     if osSystem == 'win32':
         if not os32Bit:
             if os.path.exists(WinPathDownloads + 'xmrig.exe'):
@@ -215,118 +83,23 @@ def Miner():
             LastActivity = win32api.GetLastInputInfo()
             while True:
                 if LastActivity != win32api.GetLastInputInfo():
-                    #print('Activity! Eject!')
                     proc.terminate()  # Terminates Child Process
                     UpdateTotalMiningTime(TotalSleepTime)
                     if Communication == 2:
-                        CommandAndControl("endSignal")
+                        endSignal(BaseSite)
                     break
                 elif LastActivity == win32api.GetLastInputInfo():
                     time.sleep(3)
                     TotalSleepTime += 3
-                    #print(TotalSleepTime)
-            main()  # Back to our main function and loop
+            main()
     elif osSystem == 'Linux':
         if is_64bits:
-            if not os.path.exists(LinuxPathDownloads):
-                os.mkdir(LinuxPathDownloads)
-            print('ran')
-            #Switch this over to using the xmrig github repos.
-            if not os.path.exists(LinuxPathDownloads+'/xmrig'):
-                os.mkdir(LinuxPathDownloads+'/xmrig')
-            if os.path.exists(LinuxPathDownloads + '/xmrig/xmrig'):
-                print('mining binary exists no need to download')
-            else:
-                #grab the github data and then download the latest version and update the sha256Sums
-                githubReleaseLink ="https://api.github.com/repos/xmrig/xmrig/releases/latest"
-                headers = {
-                        'accept': 'application/vnd.github.v3+json'
-                    }
-                r = requests.get(url=githubReleaseLink,headers=headers)
-                data = r.json()
-                NewestMinerVersion = data['tag_name']
-                DownloadMinerURL = 'https://github.com/xmrig/xmrig/releases/download/'+NewestMinerVersion+'/xmrig-'+NewestMinerVersion[1:6]+'-linux-x64.tar.gz'
-                print(DownloadMinerURL)
-                DownloadData(DownloadMinerURL, LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
-                #Extract the tar
-                import tarfile
-                my_tar = tarfile.open(LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
-                my_tar.extractall(LinuxPathDownloads + '/xmrig/') # specify which folder to extract to
-                my_tar.close()
-                #Set miner version so script can find it
-
-
-            
-            if os.path.exists(LinuxPathDownloads + 'config.json'):
-                print('config exists no need to download')
-            else:
-                DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
-            #Check to make sure hashes match otherwise error out
-            import hashlib
-            sha256_hash = hashlib.sha256()
-            with open(LinuxPathDownloads+'xmrigcg',"rb") as f:
-                # Read and update hash string value in blocks of 4K
-                for byte_block in iter(lambda: f.read(4096),b""):
-                    sha256_hash.update(byte_block)
-                #print(sha256_hash.hexdigest())
-                if sha256_hash.hexdigest() != SHA256Program:
-                    errorOccurred("HASH MISMATCH"); 
-
-            os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
-            #print(LinuxPathDownloads)
-            proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE,stdin=subprocess.PIPE,stderr=subprocess.PIPE,shell=True,bufsize=1,universal_newlines=True,preexec_fn=os.setsid)
-            #print (proc.stdout.read())
-            TotalSleepTime = 0
-            ReadHash = 0
-            paused = 0
-            print("Starting downtime program")
-            #It will probably be a good idea to offer an option where we just send a P keypress to pause the shell
-            while True:
-                result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
-                IdleTimeSet = int(float(result.stdout)) / 1000
-                if waitTime <= IdleTimeSet:
-                    #resume miner if it was paused
-                    if(paused):
-                        proc.stdin.write('r')
-                        proc.stdin.flush() 
-                    #print('No activity')
-                    #Testing a way to see hashrates
-                    if TotalSleepTime > 120 and ReadHash==0:
-                        print("trying to get hashrate")
-                        proc.stdin.write('h')
-                        proc.stdin.flush()
-                        HashRate = []
-                        #count = sum(1 for line in proc.stdout)
-                        i = 0
-                        #print(count)
-                        while i < 50:
-                            line = proc.stdout.readline()
-                            HashRate.append(line)
-                            i+=1
-                        #remove color data
-                        NonListHasRate =' '.join(HashRate)
-                        print(NonListHasRate)
-                        ReadHash = 1
-
-
-                    time.sleep(3)
-                    TotalSleepTime += 3
-                else:
-                    print('Activity! Eject!')
-                    #os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # Send the signal to all the process groups
-                    #pause the miner instead of killing it
-                    proc.stdin.write('p')
-                    proc.stdin.flush()
-                    #log Total Time active
-                    UpdateTotalMiningTime(TotalSleepTime)
-                    TotalSleepTime = 0
-                    if Communication == 2:
-                        CommandAndControl("endSignal")
-                    
-                    #Instead of breaking just call idle check again
-                    paused = 1
-                    LinuxIdleTime()
-                    #break
+            if(DownTimeActivity == "Miner"):
+                from Miner import LinuxMine64
+                LinuxMine64(LinuxPathDownloads,SHA256ProgramMiner,SHA256Program,waitTime,Communication,BaseSite)
+            elif(DownTimeActivity == "Sheepit"):
+                from sheepit import LinuxRender64
+                LinuxRender64(LinuxPathDownloads,waitTime,Communication,BaseSite)
             main()
 
 def Install():
@@ -358,6 +131,7 @@ def Install():
         config['settings'] = {
             "Agree" : 1,
             "Communication" : fieldValues[1], #0 no communication; 1 basic comunication; 2 verbose communication
+            "DownTimeActivity" : "Miner",
             "rebootStart" : rebootStart,
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
@@ -436,7 +210,6 @@ def Install():
             vbs.write('Set WinScriptHost = CreateObject("WScript.Shell") \n WinScriptHost.Run Chr(34) & "'+os.path.expanduser('~')+"/AppData/Roaming/DarkMiner/DarkMiner.bat"+'" & Chr(34), 0 \n Set WinScriptHost = Nothing')
             vbs.close()
 
-
     #Copy files to working directory
     from shutil import copyfile
     copyfile("main.py", UserPath+"main.py")
@@ -452,14 +225,25 @@ def Install():
 
 
 def main():
-    #print('Starting DarkMiner on ' + osSystem)
-    #check machine type to send to proper idle
     if osSystem == 'win32':
         WindowsIdleTime()
     elif osSystem == 'Linux':
-        LinuxIdleTime()
-    #Run miner if idle is complete
+        LinuxIdleTime(waitTime)
     Miner()
+
+#Handle a program shutdown
+def handler(signum = None, frame = None):
+    print('\n')
+    if DownTimeActivity == "Miner":
+        from Miner import Kill
+    elif DownTimeActivity == "Sheepit":
+        from sheepit import Kill
+    Kill()
+    print('Program Closed')
+    sys.exit(0)
+
+for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
+    signal.signal(sig, handler)
 
 #Read from Config file if exists
 config = configparser.ConfigParser()
@@ -468,6 +252,7 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
     #Settings
     Agree = int(config['settings']['Agree'])
     Communication = int(config['settings']['communication'])
+    DownTimeActivity = config['settings']['DownTimeActivity'] #What you want to run on downtime
     rebootStart = int(config['settings']['rebootStart'])
     waitTime = int(config['settings']['waitTime'])
     WinPathDownloads = config['settings']['WinPathDownloads']
@@ -478,7 +263,6 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
         #No value set because this could be an update to a running system
         UpdateFrom = 0
 
-
     #Server
     BaseSite = config['server']['BaseSite']
     Version = config['server']['Version']
@@ -488,7 +272,7 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
     try:
         SHA256Program = config['value']['SHA256Program']
     except KeyError as e:
-        SHA256Program = SHA256ProgramDefault
+        SHA256Program = SHA256ProgramMiner
 else:
     Agree = 0
 
@@ -500,18 +284,16 @@ if sys.platform.startswith('win32'):
     if(Agree):
         #Check version of the program to make sure we are running the latest and greatest
         if Communication >= 1:
-            CommandAndControl("checkVersion")
+            checkVersion(BaseSite,Version,UpdateFrom,GithubLink)
         main()
     else:
         Install()
-
 elif sys.platform.startswith('linux'):
     osSystem = 'Linux'
     is_64bits = sys.maxsize > 2 ** 32
     if(Agree):
-        print(Communication)
         if Communication >= 1:
-            CommandAndControl("checkVersion")
+            checkVersion(BaseSite,Version,UpdateFrom,GithubLink)
         main()
     else:
         Install()
