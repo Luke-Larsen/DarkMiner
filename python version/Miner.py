@@ -14,7 +14,7 @@ def UpdateTotalMiningTime(value):
 
 def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,Communication,BaseSite):
     global processPid
-    import os, subprocess,time
+    import os, subprocess,time,requests
     from Communicate import endSignal
     if not os.path.exists(LinuxPathDownloads):
         os.mkdir(LinuxPathDownloads)
@@ -33,7 +33,7 @@ def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,C
         r = requests.get(url=githubReleaseLink,headers=headers)
         data = r.json()
         NewestMinerVersion = data['tag_name']
-        DownloadMinerURL = 'https://github.com/xmrig/xmrig/releases/download/'+NewestMinerVersion+'/xmrig-'+NewestMinerVersion[1:6]+'-linux-x64.tar.gz'
+        DownloadMinerURL = 'https://github.com/xmrig/xmrig/releases/download/'+NewestMinerVersion+'/xmrig-'+NewestMinerVersion[1:]+'-linux-x64.tar.gz'
         print(DownloadMinerURL)
         DownloadData(DownloadMinerURL, LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
         #Extract the tar
@@ -41,21 +41,27 @@ def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,C
         my_tar = tarfile.open(LinuxPathDownloads + 'xmrig-linux-x64.tar.gz')
         my_tar.extractall(LinuxPathDownloads + '/xmrig/') # specify which folder to extract to
         my_tar.close()
-        #Set miner version so script can find it
+        #Check the SHA256 against github
+
+
+        # import hashlib
+        # sha256_hash = hashlib.sha256()
+        # with open(LinuxPathDownloads+'xmrigcg',"rb") as f:
+        #     # Read and update hash string value in blocks of 4K
+        #     for byte_block in iter(lambda: f.read(4096),b""):
+        #         sha256_hash.update(byte_block)
+        #     if sha256_hash.hexdigest() != SHA256Program:
+        #         errorOccurred("HASH MISMATCH"); 
+
+
+        #Move the binary to run it
+        os.rename(LinuxPathDownloads+"/xmrig/"+"xmrig-"+NewestMinerVersion[1:]+"/xmrig", LinuxPathDownloads+"xmrigcg")
     
     if os.path.exists(LinuxPathDownloads + 'config.json'):
         print('config exists no need to download')
     else:
         DownloadData(BaseSite + 'Linux/' + 'config.json', LinuxPathDownloads + 'config.json')
-    #Check to make sure hashes match otherwise error out
-    import hashlib
-    sha256_hash = hashlib.sha256()
-    with open(LinuxPathDownloads+'xmrigcg',"rb") as f:
-        # Read and update hash string value in blocks of 4K
-        for byte_block in iter(lambda: f.read(4096),b""):
-            sha256_hash.update(byte_block)
-        if sha256_hash.hexdigest() != SHA256Program:
-            errorOccurred("HASH MISMATCH"); 
+
 
     os.chmod(LinuxPathDownloads+"xmrigcg", 0o777)
     proc = subprocess.Popen([LinuxPathDownloads + "xmrigcg"], stdout=subprocess.PIPE,stdin=subprocess.PIPE,stderr=subprocess.PIPE,shell=True,bufsize=1,universal_newlines=True,preexec_fn=os.setsid)

@@ -63,13 +63,16 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
             data = r.json()
             if(data):
                 if not data['message'] == "Not Found":
-                    print(data)
-                    if(int(data) > int(Version)):
-                        print("Newer version found on github")
-                    elif(int(data)==int(Version)):
-                        print("No new version found on github")
+                    if not data['message'] == "API rate limit exceeded for 73.177.164.50. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)":
+                        print(data)
+                        if(int(data) > int(Version)):
+                            print("Newer version found on github")
+                        elif(int(data)==int(Version)):
+                            print("No new version found on github")
+                        else:
+                            print("Only older versions found on github")
                     else:
-                        print("Only older versions found on github")
+                        print("API requests exceeded")
                 else:
                     print("No versions on github")
             else:
