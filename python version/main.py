@@ -24,7 +24,7 @@ def UpdateTotalMiningTime(value):
     config['value'] = {
         'TotalTimeMining' : NewTotalTimeMining
     }
-    with open(os.path.expanduser('~') +'/.darkminerconfig.ini', 'w+') as configfile:
+    with open(os.path.expanduser('~') +'/.darkminer/config.ini', 'w+') as configfile:
         config.write(configfile)
 
 def UpdateScript():
@@ -136,7 +136,7 @@ def Install():
             "rebootStart" : rebootStart,
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
-            "LinuxPathDownloads" : os.path.expanduser('~') +'/.darkminer',
+            "LinuxPathDownloads" : os.path.expanduser('~') +'/.darkminer/',
             "UpdateFrom": 0 #0 github, 1 CNC
         }
         config['server'] = {
@@ -154,7 +154,7 @@ def Install():
     
     if(rebootStart):
         #Set path to bin and create a folder in it
-        UserPath = os.path.expanduser('~') +'/.darkminer'
+        UserPath = os.path.expanduser('~') +'/.darkminer/'
         FileName = sys.argv[0]
         if not os.path.isdir(UserPath):
             if osSystem == 'win32':
@@ -176,7 +176,7 @@ def Install():
                             \nDescription=Dark Miner Service\
                             \nPartOf=graphical-session.target\
                             \n[Service]\
-                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/.darkminermain.py --display=:0.0\
+                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/.darkminer/main.py --display=:0.0\
                             \nRestart=always\
                             \n[Install]\
                             \nWantedBy=xsession.target\
@@ -248,8 +248,8 @@ for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
 
 #Read from Config file if exists
 config = configparser.ConfigParser()
-if os.path.isfile(os.path.expanduser('~') +'/.darkminer'+"config.ini"):
-    config.read(os.path.expanduser('~') +'/.darkminer'+"config.ini")
+if os.path.isfile(os.path.expanduser('~') +'/.darkminer/'+"config.ini"):
+    config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     #Settings
     Agree = int(config['settings']['Agree'])
     Communication = int(config['settings']['communication'])
