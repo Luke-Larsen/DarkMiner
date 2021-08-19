@@ -4,10 +4,10 @@
 # This project is for legal use only
  I wish to repeat this, I have not created this program so that you go out there and use it for a botnet or something like that.
  It will not work for that purpose. It is constructed and developed to use idle time of your own personal computers when they are running
- to mine cryptocurrency like XMR which uses CPU.
+ to do downtime processes like mine cryptocurrency or join render farms.
 
 # Different versions
-There are two different versions. One which is developed in c++ and was the original code for this script. Python is the new version that I have been developing. I changed over to python as it is easy to prototype and quick to develope cross-platform solutions. It was also just a good first project to learn python with. The CNC folder is for the command and control server which can be used if you need to administer a few different computers.
+There are two different versions. One which is developed in c++ and was the original code for this script. Python is the new version that I have been developing. I changed over to python as it is easy to prototype and quick to develop cross-platform solutions. It was also just a good first project to learn python with. The CNC folder is for the command and control server which can be used if you need to administer a few different computers.
 
 # Dependencies
     ** Windows: **

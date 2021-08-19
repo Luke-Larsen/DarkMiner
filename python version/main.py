@@ -24,7 +24,7 @@ def UpdateTotalMiningTime(value):
     config['value'] = {
         'TotalTimeMining' : NewTotalTimeMining
     }
-    with open(os.path.expanduser('~') +'/bin/DarkMiner/config.ini', 'w+') as configfile:
+    with open(os.path.expanduser('~') +'.darkminerconfig.ini', 'w+') as configfile:
         config.write(configfile)
 
 def UpdateScript():
@@ -103,7 +103,7 @@ def Miner():
             main()
 
 def Install():
-    if easygui.ynbox('Proceed with the install of DarkMiner. A tool used for mining cryptocurrency. If you do not know what this is press NO', 'Title', ('Yes', 'No')):
+    if easygui.ynbox('Proceed with the install of DarkMiner. If you do not know what this is press NO', 'Title', ('Yes', 'No')):
         if easygui.ynbox('Would you like this to reboot on each startup of the computer', 'Title', ('Yes', 'No')):
             rebootStart = 1
         else:
@@ -111,6 +111,7 @@ def Install():
         #Grab data for config
         msg = "Enter your configuration values"
         title = "Enter Config data"
+        #0 least communication. 2 is the most communication
         fieldNames = ["Webdomain", "Communication mode(0-2)"]
         fieldValues = easygui.multenterbox(msg, title, fieldNames)
         if fieldValues is None:
@@ -135,7 +136,7 @@ def Install():
             "rebootStart" : rebootStart,
             "waitTime" : '120',
             "WinPathDownloads" : 'C:/Users/' + os.getlogin() + '/Downloads/',
-            "LinuxPathDownloads" : os.path.expanduser('~') +'/bin/DarkMiner/',
+            "LinuxPathDownloads" : os.path.expanduser('~') +'.darkminer',
             "UpdateFrom": 0 #0 github, 1 CNC
         }
         config['server'] = {
@@ -144,7 +145,7 @@ def Install():
         }
         config['value'] = {
             'TotalTimeMining' : 0,
-            'SHA256Program': SHA256ProgramDefault
+            'SHA256Program': SHA256ProgramMiner #Checking the sha256 of the downloaded program to make sure that its good
         }
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
@@ -153,7 +154,7 @@ def Install():
     
     if(rebootStart):
         #Set path to bin and create a folder in it
-        UserPath = os.path.expanduser('~') +'/bin/DarkMiner/'
+        UserPath = os.path.expanduser('~') +'.darkminer'
         FileName = sys.argv[0]
         if not os.path.isdir(UserPath):
             if osSystem == 'win32':
@@ -175,7 +176,7 @@ def Install():
                             \nDescription=Dark Miner Service\
                             \nPartOf=graphical-session.target\
                             \n[Service]\
-                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/bin/DarkMiner/main.py --display=:0.0\
+                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'.darkminermain.py --display=:0.0\
                             \nRestart=always\
                             \n[Install]\
                             \nWantedBy=xsession.target\
@@ -247,8 +248,8 @@ for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
 
 #Read from Config file if exists
 config = configparser.ConfigParser()
-if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
-    config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+if os.path.isfile(os.path.expanduser('~') +'.darkminer'+"config.ini"):
+    config.read(os.path.expanduser('~') +'.darkminer'+"config.ini")
     #Settings
     Agree = int(config['settings']['Agree'])
     Communication = int(config['settings']['communication'])
@@ -276,7 +277,7 @@ if os.path.isfile(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini"):
 else:
     Agree = 0
 
-#Start of program Determans what operating system to go with
+#Start of program determines what operating system to go with
 if sys.platform.startswith('win32'):
     osSystem = 'win32'
     os32Bit = GetProgramFiles32()
