@@ -11,6 +11,9 @@ SHA256ProgramMiner = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609
 SHA256ProgramSheepit = 'e4674e9e1be5bfd843c10dd9e4c42767608e3777760c83f9ccdfad5d9cffe59c'
 #Github Repo link
 GithubLink = 'https://api.github.com/repos/Luke-Larsen/DarkMiner'
+#Development Mode ( Stops it from hiding in the background)
+DevMode = 0 #0 off. Anything else means on
+
 
 #functions
 def errorOccurred(errorCode):
@@ -145,7 +148,7 @@ def Install():
         }
         config['value'] = {
             'TotalTimeMining' : 0,
-            'SHA256Program': SHA256ProgramMiner #Checking the sha256 of the downloaded program to make sure that its good
+            'SHA256Program': SHA256ProgramMiner #Checking the sha256 of the downloaded program to make sure that its good for now you will need to change it manually
         }
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
@@ -172,15 +175,26 @@ def Install():
 
             #Add our service
             filehandle = open(os.path.expanduser('~')+'/.config/systemd/user/darkminer.service', 'w')
-            filehandle.write('[Unit]\
-                            \nDescription=Dark Miner Service\
-                            \nPartOf=graphical-session.target\
-                            \n[Service]\
-                            \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/.darkminer/main.py --display=:0.0\
-                            \nRestart=always\
-                            \n[Install]\
-                            \nWantedBy=xsession.target\
-                            ')
+            if devMode == 0:
+                filehandle.write('[Unit]\
+                                \nDescription=Dark Miner Service\
+                                \nPartOf=graphical-session.target\
+                                \n[Service]\
+                                \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/.darkminer/main.py --display=:0.0\
+                                \nRestart=always\
+                                \n[Install]\
+                                \nWantedBy=xsession.target\
+                                ')
+            else:
+                filehandle.write('[Unit]\
+                    \nDescription=Dark Miner Service\
+                    \nPartOf=graphical-session.target\
+                    \n[Service]\
+                    \nExecStart=/usr/bin/python3.8 '+os.path.expanduser('~')+'/.darkminer/main.py\
+                    \nRestart=always\
+                    \n[Install]\
+                    \nWantedBy=xsession.target\
+                    ')
             filehandle.close()
             #Setting up startup on user login; check graphical environment is ready
             filehandle = open(os.path.expanduser('~')+'/.config/systemd/user/xsession.target', 'w')
@@ -219,7 +233,10 @@ def Install():
     #Start file from working directory
     easygui.msgbox('Installed DarkMiner in '+UserPath+ " starting program", 'All done')
     if osSystem == 'Linux':
-        os.system("nohup python3 "+UserPath+"main.py"+" &")
+        if DevMode == 0:
+            os.system("nohup python3 "+UserPath+"main.py"+" &")
+        else:
+            os.system("python3 "+UserPath+"main.py")
         
     elif osSystem == 'win32':
         os.system("py "+UserPath+"main.py")
