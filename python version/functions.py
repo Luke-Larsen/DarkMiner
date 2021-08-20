@@ -9,6 +9,8 @@ def DownloadData(url, direc):
 def LinuxIdleTime(waitTime):
     import subprocess,time
     #Wayland errors were caused by something else. IdleMonitor can and probably will be used again just not changed in this update
+    #Update to the previous message: While IdleMonitor can work on some machines xprintidle works better on a larger variety of machines,
+    #so I am going to keep it until I either write my own or something requires me to change.
     #from idle_time import IdleMonitor
     # monitor = IdleMonitor.get_monitor()
     result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)

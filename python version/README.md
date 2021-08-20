@@ -1,7 +1,7 @@
 # DarkMiner
  A program to use idle computer time to mine crypto
 # This code is written in python
- It currently hold support for windows and linux 64bit machines
+ It currently holds support for Windows and Linux 64bit machines
 # Dependencies
     ** Windows: **
         Python3
