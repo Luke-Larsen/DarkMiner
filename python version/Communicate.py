@@ -3,7 +3,7 @@ import configparser,os,requests,multiprocessing
 def startSignal(BaseSite):
     URL = BaseSite + 'coms.php'
     config = configparser.ConfigParser()
-    config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+    config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
     #Diffrent OS giving problems with os.environ. This solution worked for windows
     #I might need to check it on more platforms
@@ -25,7 +25,7 @@ def startSignal(BaseSite):
 def endSignal(BaseSite):
     URL = BaseSite + 'coms.php'
     config = configparser.ConfigParser()
-    config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+    config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
     try:
         PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}

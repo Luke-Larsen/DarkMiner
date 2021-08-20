@@ -3,13 +3,13 @@ from functions import LinuxIdleTime
 def UpdateTotalMiningTime(value):
     import configparser,os
     config = configparser.ConfigParser()
-    config.read(os.path.expanduser('~') +'/bin/DarkMiner/'+"config.ini")
+    config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
     NewTotalTimeMining = int(TotalTimeMining) + int(value)
     config['value'] = {
         'TotalTimeMining' : NewTotalTimeMining
     }
-    with open(os.path.expanduser('~') +'/bin/DarkMiner/config.ini', 'w+') as configfile:
+    with open(os.path.expanduser('~') +'/.darkminer/config.ini', 'w+') as configfile:
         config.write(configfile)
 
 def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,Communication,BaseSite):
