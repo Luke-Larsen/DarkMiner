@@ -175,7 +175,7 @@ def Install():
 
             #Add our service
             filehandle = open(os.path.expanduser('~')+'/.config/systemd/user/darkminer.service', 'w')
-            if devMode == 0:
+            if DevMode == 0:
                 filehandle.write('[Unit]\
                                 \nDescription=Dark Miner Service\
                                 \nPartOf=graphical-session.target\
@@ -228,6 +228,10 @@ def Install():
     #Copy files to working directory
     from shutil import copyfile
     copyfile("main.py", UserPath+"main.py")
+    copyfile("functions.py", UserPath+"functions.py")
+    copyfile("Communicate.py", UserPath+"Communicate.py")
+    copyfile("Miner.py", UserPath+"Miner.py")
+    copyfile("sheepit.py", UserPath+"sheepit.py")
     copyfile("config.ini", UserPath+"config.ini")
     #os.remove("config.ini")
     #Start file from working directory

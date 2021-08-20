@@ -16,8 +16,11 @@ def startSignal(BaseSite):
         except KeyError as e:
             print('Computer really no work right: "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
-    data = r.json()
-    print(data)
+    try: #Sometimes issues occure with json sorting it out
+        data = r.json()
+        print(data)
+    except:
+        print(r)
 
 def endSignal(BaseSite):
     URL = BaseSite + 'coms.php'
@@ -33,8 +36,11 @@ def endSignal(BaseSite):
         except KeyError as e:
             print('Computer really no work right: "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
-    data = r.json()
-    print(data)
+    try: #Sometimes issues occure with json sorting it out
+        data = r.json()
+        print(data)
+    except:
+        print(r)
 
 def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     URL = BaseSite + 'coms.php'
@@ -49,7 +55,11 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
         except KeyError as e:
             print('Computer really no work right: "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
-    data = r.json()
+    try: #Sometimes issues occure with json sorting it out
+        data = r.json()
+        print(data)
+    except:
+        print(r)
     if int(data) > int(Version):
         print("Old Version")
         if not UpdateFrom: 

@@ -3,6 +3,7 @@
 // ini_set('display_startup_errors', '1');
 // error_reporting(E_ALL);
 require 'config.php';
+header('Content-Type: application/json');
 $serverVersion = 6;
 $User = $_GET["name"];
 $CPU = $_GET["CPU"];
@@ -34,13 +35,13 @@ if(($result ->num_rows == 0)){
     $stmt->bind_param("sisi", $User, $CPU,$ip,$Version);
     $stmt->execute();
     $stmt->close();
-    echo $serverVersion;
+    echo json_encode($serverVersion);
 }else{
     if(isset($Type)){
         if($Type == 'checkVersion'){
             //Reply with the newest server version
             //Soon this will be used to update clients
-            echo $serverVersion;
+            echo json_encode($serverVersion);
         }else{
             //Otherwise the client is telling us about it's self so we will update the server
             $MiningTime = time() - $row['Mining'];
@@ -51,7 +52,7 @@ if(($result ->num_rows == 0)){
             $stmt->bind_param("iisis", $Mining,$time,$ip,$MiningTotalTime,$User);
             $stmt->execute();
             $stmt->close();
-            echo "1";
+            echo json_encode("1");
         }
     }else{
     //Use old system mainly implemented in the C++ version
@@ -72,7 +73,7 @@ if(($result ->num_rows == 0)){
                 }else{
                     //This shouldn't happen
                     //It would mean that it was active and is now updating to say it is still active
-                    echo "error";
+                    echo json_encode("error");
                 }
 
             }else{
@@ -89,6 +90,6 @@ if(($result ->num_rows == 0)){
             $stmt->execute();
             $stmt->close();
         }
-        echo $serverVersion;
+        echo json_encode($serverVersion);
     }
 }
