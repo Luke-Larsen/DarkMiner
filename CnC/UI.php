@@ -118,6 +118,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
             }else{
                 //page stuff
                 echo "<a href='?logout=1'>logout</a><br>";
+                echo "<a href=settings.php>Settings</a>";
                 //Data about computers
                 $stmt = $con->prepare("select * from Work");
                 $stmt->execute();
@@ -129,6 +130,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                         <th>Name</th>
                         <th>Total Idle Time</th>
                         <th>Last Seen</th>
+                        <th>Controls</th>
                     </tr>        
                 ";
                 while($row = mysqli_fetch_assoc($result)){
@@ -136,6 +138,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                     $Active = $row['Active'];
                     $TotalMinedTime = $row['TotalMinedTime'];
                     $lastSeen = $row['lastSeen'];
+                    $id = $row['id'];
                     $TotalMinedTimeHumanReadable = secondsToTime($TotalMinedTime);
                     if($Active){
                         echo "
@@ -143,6 +146,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                                 <td style='color:green'>$Computer</td>
                                 <td>$TotalMinedTimeHumanReadable</td> 
                                 <td>$lastSeen</td>
+                                <td><a href='delete.php?id=$id'>delete</a></td>
                             </tr>
                             ";
                     }else{
@@ -151,6 +155,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                                 <td style='color:red'>$Computer</td>
                                 <td>$TotalMinedTimeHumanReadable</td> 
                                 <td>$lastSeen</td>
+                                <td><a href='delete.php?id=$id'>delete</a></td>
                             </tr>
                         ";
                     }

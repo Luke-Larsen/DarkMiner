@@ -5,7 +5,7 @@ from Communicate import *
 from functions import LinuxIdleTime,WindowsIdleTime
 
 #Script Version
-ScriptVersion = '1'
+ScriptVersion = '6'
 #SHA256 of your downtime programs
 SHA256ProgramMiner = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
 SHA256ProgramSheepit = 'e4674e9e1be5bfd843c10dd9e4c42767608e3777760c83f9ccdfad5d9cffe59c'
@@ -298,6 +298,20 @@ if os.path.isfile(os.path.expanduser('~') +'/.darkminer/'+"config.ini"):
     BaseSite = config['server']['BaseSite']
     Version = config['server']['Version']
 
+    #check if updated script
+    if Version < ScriptVersion:
+        print('Script has been updated')
+        Version = ScriptVersion
+
+        config['server']= {
+            'BaseSite': BaseSite,
+            'Version' : ScriptVersion
+            }
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+
+
+
     #Values
     TotalTimeMining = config['value']['totaltimemining']
     try:
@@ -315,7 +329,7 @@ if sys.platform.startswith('win32'):
     if(Agree):
         #Check version of the program to make sure we are running the latest and greatest
         if Communication >= 1:
-            checkVersion(BaseSite,Version,UpdateFrom,GithubLink)
+            checkVersion(ScriptVersion,BaseSite,osSystem,GithubLink)
         main()
     else:
         Install()
@@ -324,7 +338,7 @@ elif sys.platform.startswith('linux'):
     is_64bits = sys.maxsize > 2 ** 32
     if(Agree):
         if Communication >= 1:
-            checkVersion(BaseSite,Version,UpdateFrom,GithubLink)
+            checkVersion(ScriptVersion,BaseSite,osSystem,GithubLink)
         main()
     else:
         Install()

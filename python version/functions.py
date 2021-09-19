@@ -6,35 +6,23 @@ def DownloadData(url, direc):
         f.write(r.content)
         print('Success Downloading files')
 
-def upgrade(ver,osSystem,GithubLink):
+def upgrade(ver,osSystem,LinuxPathDownloads,GithubLink):
     #TODO create,test,debug
     #Download from github
-    githubReleaseLink = GithubLink + "/releases/latest"
-    headers = {
-            'accept': 'application/vnd.github.v3+json'
-        }
-    r = requests.get(url=githubReleaseLink,headers=headers)
-    data = r.json()
-    NewestVersion = data['tag_name']
-    DownloadMinerURL = GithubLink + '/releases/download/'+NewestVersion+'/darkminer-'+NewestVersion+'.zip'
+    
+    DownloadMinerURL = 'https://www.github.com/repos/Luke-Larsen/DarkMiner/releases/download/'+ver+'/darkminer-'+ver+'.zip'
     print(DownloadMinerURL)
     DownloadData(DownloadMinerURL, LinuxPathDownloads + 'update.zip')
-    #check SHA256
-        #TODO upgrade to full pgp
+
+    #TODO check against pgp
     
     #unzip file
-    import zipfile
+    import zipfile,subprocess
     with zipfile.ZipFile(LinuxPathDownloads+'update.zip', 'r') as zip_ref:
-        zip_ref.extractall(LinuxPathDownloads+'unzipped')
-
-    #create batch or bash *Update* script to move stuff to final locations and start new program
-    if osSystem == 'win32':
-        print('Code for windows in progress')
-    elif osSystem == 'Linux':
-        update = open('updater.sh', 'w')
-        update.write('mv unzipped/* *')
-        update.close()
+        zip_ref.extractall(LinuxPathDownloads)
     #run script
+    exec(open("main.py").read())
+    exit()
 
 def LinuxIdleTime(waitTime):
     import subprocess,time

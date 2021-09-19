@@ -6,6 +6,7 @@ def downTimeSignal(BaseSite,state):
     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
     Version = config['server']['Version']
+
     if state == 0:
         signal = 'endSignal'
     elif state == 1:
@@ -25,10 +26,15 @@ def downTimeSignal(BaseSite,state):
     except:
         print(r)
 
-def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
+def checkVersion(Version,BaseSite,osSystem,GithubLink):
     URL = BaseSite + 'coms.php'
     #Diffrent OS giving problems with os.environ. This solution worked for windows
     #I might need to check it on more platforms
+    config = configparser.ConfigParser()
+    if os.path.isfile(os.path.expanduser('~') +'/.darkminer/'+"config.ini"):
+        config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
+        UpdateFrom = config['settings']['UpdateFrom']
+        LinuxPathDownloads = config['settings']['LinuxPathDownloads']
     try:
         PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
     except KeyError as e:
@@ -40,39 +46,50 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     r = requests.get(url=URL, params=PARAMS)
     try: #Sometimes issues occure with json sorting it out
         data = r.json()
-        print(data)
+        #print(data)
     except:
         print(r)
-    if int(data) > int(Version):
-        print("Old Version")
-        if not UpdateFrom: 
-            #If not set or set to default check github for update 
-            #Check github for a newer version of the script
-            githubReleaseLink = GithubLink + "/releases/latest"
-            headers = {
-                    'accept': 'application/vnd.github.v3+json'
-                }
-            r = requests.get(url=githubReleaseLink,headers=headers)
-            data = r.json()
-            if(data):
-                if not data['message'] == "Not Found":
-                    if not data['message'].startswith("API rate limit"):
-                        print(data)
-                        if(int(data) > int(Version)):
-                            print("Newer version found on github")
-                            #TODO
-                            #upgrade(ver,osSystem,GithubLink)
-                        elif(int(data)==int(Version)):
-                            print("No new version found on github")
-                        else:
-                            print("Only older versions found on github")
+
+
+    #I think I will come up with a few modes for updates
+    #mode 0 is staying up to date with the latest github version
+    #mode 1 is getting the version the CNC states from github (You can set a specfic version from github on the CNC and it will stay on that one)
+    #mode 2 only updates from the CNC server and CNC version
+
+
+    if UpdateFrom == '0': 
+        #Check github for a newer version of the script
+        githubReleaseLink = GithubLink + "/releases/latest"
+        headers = {
+                'accept': 'application/vnd.github.v3+json'
+            }
+        r = requests.get(url=githubReleaseLink,headers=headers)
+        data = r.json()
+        if(data):
+            if not data['message'] == "Not Found":
+                if not data['message'].startswith("API rate limit"):
+                    print(data)
+                    if(int(data) > int(Version)):
+                        print("Newer version found on github")
+                        #TODO
+                        #upgrade(ver,osSystem,GithubLink)
+                    elif(int(data)==int(Version)):
+                        print("No new version found on github")
                     else:
-                        print("API requests exceeded")
+                        print("Only older versions found on github")
                 else:
-                    print("No versions on github")
+                    print("API requests exceeded")
             else:
-                print("No github data")
-        else: 
-            #Set to something custom or 1
-            #Allow updates from the CNC module
-            print("manual updates coming soon")
+                print("No versions on github")
+        else:
+            print("No github data")
+    elif UpdateFrom == '1':
+        if int(data) != int(Version):
+            CNCVersion = int(data)
+            print("CNC wants a diffrent version")
+            from functions import upgrade
+            upgrade(CNCVersion,osSystem,LinuxPathDownloads,GithubLink)
+
+    elif UpdateFrom == '2':
+        #Allow updates from the CNC server only
+        print("manual updates coming soon")
