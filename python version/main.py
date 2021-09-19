@@ -49,7 +49,7 @@ def Miner():
     #TODO: Start logging away time so that we can build a simple computer model of downtime to prevent false positives
 
     if Communication == 2:
-        startSignal(BaseSite)
+        downTimeSignal(BaseSite,1)
     if osSystem == 'win32':
         if not os32Bit:
             if os.path.exists(WinPathDownloads + 'xmrig.exe'):
@@ -89,7 +89,7 @@ def Miner():
                     proc.terminate()  # Terminates Child Process
                     UpdateTotalMiningTime(TotalSleepTime)
                     if Communication == 2:
-                        endSignal(BaseSite)
+                        downTimeSignal(BaseSite,0)
                     break
                 elif LastActivity == win32api.GetLastInputInfo():
                     time.sleep(3)
@@ -266,6 +266,12 @@ def handler(signum = None, frame = None):
 
 for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
     signal.signal(sig, handler)
+
+#Dependency check
+try:
+    result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
+except:
+    print("xprintidle is not installed")
 
 #Read from Config file if exists
 config = configparser.ConfigParser()

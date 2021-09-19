@@ -1,46 +1,70 @@
 import configparser,os,requests,multiprocessing
 
-def startSignal(BaseSite):
+def downTimeSignal(BaseSite,state):
     URL = BaseSite + 'coms.php'
     config = configparser.ConfigParser()
     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
-    #Diffrent OS giving problems with os.environ. This solution worked for windows
-    #I might need to check it on more platforms
+    if state == 0:
+        signal = 'endSignal'
+    elif state == 1:
+        signal = 'startSignal'
     try:
-        PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
+        PARAMS = {'Type':signal,'name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining}
     except KeyError as e:
-        print('Computer no work right: "%s"' % str(e))
+        print('Error with os.environ[USER] : "%s"' % str(e))
         try:
-            PARAMS = {'Type':'startSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
+            PARAMS = {'Type':signal,'name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining}
         except KeyError as e:
-            print('Computer really no work right: "%s"' % str(e))
+            print('Error with os.getlogin() : "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
-    try: #Sometimes issues occure with json sorting it out
+    try:
         data = r.json()
         print(data)
     except:
         print(r)
 
-def endSignal(BaseSite):
-    URL = BaseSite + 'coms.php'
-    config = configparser.ConfigParser()
-    config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
-    TotalTimeMining = config['value']['TotalTimeMining']
-    try:
-        PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
-    except KeyError as e:
-        print('Computer no work right: "%s"' % str(e))
-        try:
-            PARAMS = {'Type':'endSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
-        except KeyError as e:
-            print('Computer really no work right: "%s"' % str(e))
-    r = requests.get(url=URL, params=PARAMS)
-    try: #Sometimes issues occure with json sorting it out
-        data = r.json()
-        print(data)
-    except:
-        print(r)
+# def startSignal(BaseSite):
+#     URL = BaseSite + 'coms.php'
+#     config = configparser.ConfigParser()
+#     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
+#     TotalTimeMining = config['value']['TotalTimeMining']
+#     #Diffrent OS giving problems with os.environ. This solution worked for windows
+#     #I might need to check it on more platforms
+#     try:
+#         PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
+#     except KeyError as e:
+#         print('Error with os.environ[USER] : "%s"' % str(e))
+#         try:
+#             PARAMS = {'Type':'startSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
+#         except KeyError as e:
+#             print('Error with os.getlogin() : "%s"' % str(e))
+#     r = requests.get(url=URL, params=PARAMS)
+#     try:
+#         data = r.json()
+#         print(data)
+#     except:
+#         print(r)
+
+# def endSignal(BaseSite):
+#     URL = BaseSite + 'coms.php'
+#     config = configparser.ConfigParser()
+#     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
+#     TotalTimeMining = config['value']['TotalTimeMining']
+#     try:
+#         PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
+#     except KeyError as e:
+#         print('Error with os.environ[USER] : "%s"' % str(e))
+#         try:
+#             PARAMS = {'Type':'endSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
+#         except KeyError as e:
+#             print('Error with os.getlogin() : "%s"' % str(e))
+#     r = requests.get(url=URL, params=PARAMS)
+#     try:
+#         data = r.json()
+#         print(data)
+#     except:
+#         print(r)
 
 def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     URL = BaseSite + 'coms.php'
@@ -73,10 +97,12 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
             data = r.json()
             if(data):
                 if not data['message'] == "Not Found":
-                    if not data['message'] == "API rate limit exceeded for 73.177.164.50. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)":
+                    if not data['message'].startswith("API rate limit"):
                         print(data)
                         if(int(data) > int(Version)):
                             print("Newer version found on github")
+                            #TODO
+                            #upgrade(ver,osSystem,GithubLink)
                         elif(int(data)==int(Version)):
                             print("No new version found on github")
                         else:
