@@ -15,7 +15,7 @@ def UpdateTotalMiningTime(value):
 def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,Communication,BaseSite):
     global processPid
     import os, subprocess,time,requests
-    from Communicate import endSignal
+    from Communicate import downTimeSignal
     if not os.path.exists(LinuxPathDownloads):
         os.mkdir(LinuxPathDownloads)
     #Switch this over to using the xmrig github repos.
@@ -113,7 +113,7 @@ def LinuxMine64(LinuxPathDownloads,SHA256ProgramDefault,SHA256Program,waitTime,C
             UpdateTotalMiningTime(TotalSleepTime)
             TotalSleepTime = 0
             if Communication == 2:
-                endSignal(BaseSite)
+                downTimeSignal(BaseSite,0)
             
             #Instead of breaking just call idle check again
             paused = 1

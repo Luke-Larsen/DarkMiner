@@ -128,18 +128,21 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                     <tr>
                         <th>Name</th>
                         <th>Total Idle Time</th>
+                        <th>Last Seen</th>
                     </tr>        
                 ";
                 while($row = mysqli_fetch_assoc($result)){
                     $Computer = $row['Name'];
                     $Active = $row['Active'];
                     $TotalMinedTime = $row['TotalMinedTime'];
+                    $lastSeen = $row['lastSeen'];
                     $TotalMinedTimeHumanReadable = secondsToTime($TotalMinedTime);
                     if($Active){
                         echo "
                             <tr>
                                 <td style='color:green'>$Computer</td>
                                 <td>$TotalMinedTimeHumanReadable</td> 
+                                <td>$lastSeen</td>
                             </tr>
                             ";
                     }else{
@@ -147,6 +150,7 @@ if(isset($_POST['passwordChangeFormSubmit'])){
                             <tr>
                                 <td style='color:red'>$Computer</td>
                                 <td>$TotalMinedTimeHumanReadable</td> 
+                                <td>$lastSeen</td>
                             </tr>
                         ";
                     }

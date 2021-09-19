@@ -131,6 +131,8 @@ def Install():
             if fieldValues is None:
                 break
 
+        #TODO check to make sure the website url is valid and will work
+
         #writting to config
         config['settings'] = {
             "Agree" : 1,
@@ -272,6 +274,7 @@ try:
     result = subprocess.run(['xprintidle'], stdout=subprocess.PIPE)
 except:
     print("xprintidle is not installed")
+    exit()
 
 #Read from Config file if exists
 config = configparser.ConfigParser()

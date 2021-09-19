@@ -23,49 +23,7 @@ def downTimeSignal(BaseSite,state):
         print(data)
     except:
         print(r)
-
-# def startSignal(BaseSite):
-#     URL = BaseSite + 'coms.php'
-#     config = configparser.ConfigParser()
-#     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
-#     TotalTimeMining = config['value']['TotalTimeMining']
-#     #Diffrent OS giving problems with os.environ. This solution worked for windows
-#     #I might need to check it on more platforms
-#     try:
-#         PARAMS = {'Type':'startSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
-#     except KeyError as e:
-#         print('Error with os.environ[USER] : "%s"' % str(e))
-#         try:
-#             PARAMS = {'Type':'startSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':1,'MiningTotalTime':TotalTimeMining}
-#         except KeyError as e:
-#             print('Error with os.getlogin() : "%s"' % str(e))
-#     r = requests.get(url=URL, params=PARAMS)
-#     try:
-#         data = r.json()
-#         print(data)
-#     except:
-#         print(r)
-
-# def endSignal(BaseSite):
-#     URL = BaseSite + 'coms.php'
-#     config = configparser.ConfigParser()
-#     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
-#     TotalTimeMining = config['value']['TotalTimeMining']
-#     try:
-#         PARAMS = {'Type':'endSignal','name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
-#     except KeyError as e:
-#         print('Error with os.environ[USER] : "%s"' % str(e))
-#         try:
-#             PARAMS = {'Type':'endSignal','name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':0,'MiningTotalTime':TotalTimeMining}
-#         except KeyError as e:
-#             print('Error with os.getlogin() : "%s"' % str(e))
-#     r = requests.get(url=URL, params=PARAMS)
-#     try:
-#         data = r.json()
-#         print(data)
-#     except:
-#         print(r)
-
+        
 def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     URL = BaseSite + 'coms.php'
     #Diffrent OS giving problems with os.environ. This solution worked for windows
@@ -73,11 +31,11 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     try:
         PARAMS = {'Type':'checkVersion','name': os.environ['USER']}
     except KeyError as e:
-        print('Computer no work right: "%s"' % str(e))
+        print('Error with os.environ[USER] : "%s"' % str(e))
         try:
             PARAMS = {'Type':'checkVersion','name': os.getlogin()}
         except KeyError as e:
-            print('Computer really no work right: "%s"' % str(e))
+            print('Error with os.getlogin() : "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
     try: #Sometimes issues occure with json sorting it out
         data = r.json()
@@ -113,6 +71,7 @@ def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
                     print("No versions on github")
             else:
                 print("No github data")
-        else: #Set to something custom or 1
+        else: 
+            #Set to something custom or 1
             #Allow updates from the CNC module
-            print("Coming soon")
+            print("manual updates coming soon")
