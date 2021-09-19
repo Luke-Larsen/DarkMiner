@@ -5,16 +5,17 @@ def downTimeSignal(BaseSite,state):
     config = configparser.ConfigParser()
     config.read(os.path.expanduser('~') +'/.darkminer/'+"config.ini")
     TotalTimeMining = config['value']['TotalTimeMining']
+    Version = config['server']['Version']
     if state == 0:
         signal = 'endSignal'
     elif state == 1:
         signal = 'startSignal'
     try:
-        PARAMS = {'Type':signal,'name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining}
+        PARAMS = {'Type':signal,'name': os.environ['USER'], 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining,'version':Version}
     except KeyError as e:
         print('Error with os.environ[USER] : "%s"' % str(e))
         try:
-            PARAMS = {'Type':signal,'name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining}
+            PARAMS = {'Type':signal,'name': os.getlogin(), 'CPU': multiprocessing.cpu_count(),'Mining':state,'MiningTotalTime':TotalTimeMining,'version':Version}
         except KeyError as e:
             print('Error with os.getlogin() : "%s"' % str(e))
     r = requests.get(url=URL, params=PARAMS)
@@ -23,7 +24,7 @@ def downTimeSignal(BaseSite,state):
         print(data)
     except:
         print(r)
-        
+
 def checkVersion(BaseSite,Version,UpdateFrom,GithubLink):
     URL = BaseSite + 'coms.php'
     #Diffrent OS giving problems with os.environ. This solution worked for windows
