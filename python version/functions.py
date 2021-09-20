@@ -10,7 +10,7 @@ def upgrade(ver,osSystem,LinuxPathDownloads,GithubLink):
     #TODO create,test,debug
     #Download from github
     
-    DownloadMinerURL = 'https://www.github.com/repos/Luke-Larsen/DarkMiner/releases/download/'+ver+'/darkminer-'+ver+'.zip'
+    DownloadMinerURL = 'https://www.github.com/repos/Luke-Larsen/DarkMiner/releases/download/'+ver+'/darkminer.zip'
     print(DownloadMinerURL)
     DownloadData(DownloadMinerURL, LinuxPathDownloads + 'update.zip')
 

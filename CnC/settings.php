@@ -7,7 +7,15 @@ error_reporting(E_ALL);
 require 'config.php';
 
 if(isset($_SESSION['USER'])){
-    echo "Coming soon <a href='UI.php'>back</a>";
+    echo "
+    Work in progress coming soon<br>
+    <form action='' method='post'>
+    <label for='versions'>Choose a version:</label>
+    <select id='versions' name='versions'>
+        <option value='1'>1</option>
+    </select>
+    </form>
+    ";
 }
 
 //header('location:UI.php');

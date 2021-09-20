@@ -50,11 +50,9 @@ def checkVersion(Version,BaseSite,osSystem,GithubLink):
     except:
         print(r)
 
-
-    #I think I will come up with a few modes for updates
-    #mode 0 is staying up to date with the latest github version
-    #mode 1 is getting the version the CNC states from github (You can set a specfic version from github on the CNC and it will stay on that one)
-    #mode 2 only updates from the CNC server and CNC version
+    #UpdateFrom 0 is staying up to date with the latest github version
+    #UpdateFrom 1 is getting the version the CNC states from github (You can set a specfic version from github on the CNC and it will stay on that one)
+    #UpdateFrom 2 only updates from the CNC server and CNC version
 
 
     if UpdateFrom == '0': 
@@ -65,14 +63,15 @@ def checkVersion(Version,BaseSite,osSystem,GithubLink):
             }
         r = requests.get(url=githubReleaseLink,headers=headers)
         data = r.json()
+
         if(data):
             if not data['message'] == "Not Found":
                 if not data['message'].startswith("API rate limit"):
                     print(data)
-                    if(int(data) > int(Version)):
+                    NewestVersion = data['tag_name']
+                    if(float(NewestVersion) > float(Version)):
                         print("Newer version found on github")
-                        #TODO
-                        #upgrade(ver,osSystem,GithubLink)
+                        upgrade(NewestVersion,osSystem,GithubLink)
                     elif(int(data)==int(Version)):
                         print("No new version found on github")
                     else:
