@@ -10,7 +10,7 @@ def upgrade(ver,osSystem,LinuxPathDownloads,GithubLink):
     #TODO create,test,debug
     #Download from github
     
-    DownloadMinerURL = 'https://www.github.com/repos/Luke-Larsen/DarkMiner/releases/download/'+ver+'/darkminer-python.zip'
+    DownloadMinerURL = 'https://www.github.com/Luke-Larsen/DarkMiner/releases/download/v'+str(ver)+'/darkminer-python.zip'
     print(DownloadMinerURL)
     DownloadData(DownloadMinerURL, LinuxPathDownloads + 'update.zip')
 
@@ -21,7 +21,7 @@ def upgrade(ver,osSystem,LinuxPathDownloads,GithubLink):
     with zipfile.ZipFile(LinuxPathDownloads+'update.zip', 'r') as zip_ref:
         zip_ref.extractall(LinuxPathDownloads)
     #run script
-    exec(open("main.py").read())
+    subprocess.call(['python3', 'main.py'])
     exit()
 
 def LinuxIdleTime(waitTime):

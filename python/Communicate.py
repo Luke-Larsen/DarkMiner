@@ -54,7 +54,7 @@ def checkVersion(Version,BaseSite,osSystem,GithubLink):
     #UpdateFrom 1 is getting the version the CNC states from github (You can set a specfic version from github on the CNC and it will stay on that one)
     #UpdateFrom 2 only updates from the CNC server and CNC version
 
-
+    from functions import upgrade
     if UpdateFrom == '0': 
         #Check github for a newer version of the script
         githubReleaseLink = GithubLink + "/releases/latest"
@@ -65,28 +65,28 @@ def checkVersion(Version,BaseSite,osSystem,GithubLink):
         data = r.json()
 
         if(data):
-            if not data['message'] == "Not Found":
-                if not data['message'].startswith("API rate limit"):
-                    print(data)
-                    NewestVersion = data['tag_name']
-                    if(float(NewestVersion) > float(Version)):
+            #if not data['message'] == "Not Found":
+            #    if not data['message'].startswith("API rate limit"):
+                    #print(data)
+                    NewestVersion = float(data['tag_name'][1:])
+                    if(NewestVersion > float(Version)):
                         print("Newer version found on github")
-                        upgrade(NewestVersion,osSystem,GithubLink)
-                    elif(int(data)==int(Version)):
+                        upgrade(NewestVersion,osSystem,LinuxPathDownloads,GithubLink)
+                    elif(float(NewestVersion)==float(Version)):
                         print("No new version found on github")
                     else:
                         print("Only older versions found on github")
-                else:
-                    print("API requests exceeded")
-            else:
-                print("No versions on github")
+            #     else:
+            #         print("API requests exceeded")
+            # else:
+            #     print("No versions on github")
         else:
             print("No github data")
     elif UpdateFrom == '1':
         if int(data) != int(Version):
             CNCVersion = int(data)
             print("CNC wants a diffrent version")
-            from functions import upgrade
+            
             upgrade(CNCVersion,osSystem,LinuxPathDownloads,GithubLink)
 
     elif UpdateFrom == '2':

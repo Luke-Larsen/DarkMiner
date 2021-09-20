@@ -5,7 +5,7 @@ from Communicate import *
 from functions import LinuxIdleTime,WindowsIdleTime
 
 #Script Version
-ScriptVersion = '6'
+ScriptVersion = '1.0'
 #SHA256 of your downtime programs
 SHA256ProgramMiner = '7db002483369077051d179a80105a816c45951c24fe65023d58bc05609c49f65'
 SHA256ProgramSheepit = 'e4674e9e1be5bfd843c10dd9e4c42767608e3777760c83f9ccdfad5d9cffe59c'
@@ -299,7 +299,7 @@ if os.path.isfile(os.path.expanduser('~') +'/.darkminer/'+"config.ini"):
     Version = config['server']['Version']
 
     #check if updated script
-    if Version < ScriptVersion:
+    if float(Version) < float(ScriptVersion):
         print('Script has been updated')
         Version = ScriptVersion
 
